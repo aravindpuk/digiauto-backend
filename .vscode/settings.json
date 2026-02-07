@@ -1,0 +1,7 @@
+{
+  "python.defaultInterpreterPath": "/Users/puk-aravind/Documents/projects/digiauto_pro/env_digiauto/bin/python",
+  "python.terminal.activateEnvironment": true,
+  "python.analysis.autoImportCompletions": true,
+  "python.analysis.extraPaths": [],
+  "terminal.integrated.defaultProfile.osx": "zsh"
+}
