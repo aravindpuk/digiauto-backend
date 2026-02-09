@@ -27,3 +27,7 @@ class JobCardView(APIView):
         except Exception as e:
             return Response({"error": str(e)}, status=400)
     # Logic to handle job card operations   
+
+
+def jobcard_list(req):
+    print(req)

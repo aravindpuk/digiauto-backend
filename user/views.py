@@ -1,3 +1,4 @@
+from django.http import HttpResponse
 from django.shortcuts import render
 
 # Create your views here.
@@ -42,7 +43,7 @@ class RegisterUser(APIView):
 @api_view(['POST'])
 def login(request):
     try:
-           
+        print(request.data)
         mobile = request.data.get('mobile')
         pin = request.data.get('pin')
 
@@ -67,6 +68,8 @@ def login(request):
                 'user': user.id,            
                 
         }, status=status.HTTP_200_OK)
+    
+        # return HttpResponse('login view')
 
     except Exception as e:
         return  Response({'message': str(e)}, status=status.HTTP_404_NOT_FOUND)
