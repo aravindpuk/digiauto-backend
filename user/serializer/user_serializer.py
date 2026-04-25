@@ -1,4 +1,7 @@
 
+from os import name
+
+from django.forms import SlugField
 from rest_framework import serializers
 
 from user.models import User,UserRole
@@ -9,27 +12,19 @@ class UserRoleSerializer(serializers.ModelSerializer):
     fields = ['id','name']
 
 
-
 class UserSerializer(serializers.ModelSerializer):
-   
+    
+    role = serializers.SlugRelatedField(queryset=UserRole.objects.all(),slug_field='name')
 
     class Meta:
         model = User
         fields = ['name','mobile','pin','role']
     
-    def validate_mobile(self,value):
-
-        if User.objects.filter(mobile=value).exists():
-            raise serializers.ValidationError("mobile Already Exist...")
-        return value
-    
+   
     def create(self, validated_data):
         pin = validated_data.pop('pin')
-        role = validated_data.pop('role')
         
-        _role = UserRole.objects.get(id=role.id)
-        
-        user = User(role=_role,**validated_data)
+        user = User(**validated_data)
 
         user.set_pin(pin)
         user.save()

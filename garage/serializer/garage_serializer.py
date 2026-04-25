@@ -10,7 +10,7 @@ class GarageSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Garage
-        fields = ['name', 'email', 'mobile', 'place', 'logo', 'seal']
+        fields = ['name', 'email', 'mobile', 'logo']
 
     
     def create(self, validated_data):

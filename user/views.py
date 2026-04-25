@@ -9,6 +9,7 @@ from rest_framework.generics import CreateAPIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view
+from rest_framework.exceptions import ValidationError
 
 from user.serializer.user_serializer import UserRoleSerializer, UserSerializer,UserRole
 from . models import LoginInfo,User, UserRole
@@ -25,12 +26,16 @@ class RegisterUser(APIView):
 
     def post(self,request):
         try:
+           
             _serializer = UserSerializer(data=request.data)
-            if _serializer.is_valid():
+            if _serializer.is_valid(raise_exception=True):
                 _serializer.save()
                 return Response({'message':'user saved...'},status=201)
-            else:
-                return Response({'message':f"user Reg failed .. {_serializer.errors}"},status=400)
+        except ValidationError:
+                errors = _serializer.errors
+                field, message = next(iter(errors.items()))
+                
+                return Response({'message':f"user Reg failed .. {message[0]}"},status=400)
         except Exception as e:
             print(e)
             return Response({'message':str(e)},status=400)
@@ -43,7 +48,6 @@ class RegisterUser(APIView):
 @api_view(['POST'])
 def login(request):
     try:
-        print(request.data)
         mobile = request.data.get('mobile')
         pin = request.data.get('pin')
 
@@ -51,8 +55,10 @@ def login(request):
             return Response({'message': 'Mobile and PIN are required'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
+            
             user = User.objects.get(mobile=mobile)
-        except User.DoesNotExist:
+        except User.DoesNotExist as u:
+            print(u)
             return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
         if not user.check_pin(pin):
@@ -62,16 +68,19 @@ def login(request):
         login = LoginInfo.objects.create(user=user, login_status=True)
         token = login.generate_auth_token()
 
+        branch = user.branches.select_related('garage').first()
         return Response({
                 'message': 'Login successful',
                 'token': token,
-                'user': user.id,            
+                'garage':branch.garage.id if branch else None #currently 
+                # 'user': user.id,            
                 
         }, status=status.HTTP_200_OK)
     
         # return HttpResponse('login view')
 
     except Exception as e:
+        print(e)
         return  Response({'message': str(e)}, status=status.HTTP_404_NOT_FOUND)
 
 
@@ -82,4 +91,4 @@ def logout(request):
     LoginInfo.objects.filter(user=user, Login_status=True).update(
         login_status=False, logout_time=timezone.now()
         )
-    return Response({'message': 'Logged out successfully'})
+    return Response({'message': 'Logged out successfully'},status=status.HTTP_200_OK)

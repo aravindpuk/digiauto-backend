@@ -3,5 +3,6 @@
   "python.terminal.activateEnvironment": true,
   "python.analysis.autoImportCompletions": true,
   "python.analysis.extraPaths": [],
-  "terminal.integrated.defaultProfile.osx": "zsh"
+  "terminal.integrated.defaultProfile.osx": "zsh",
+  "python-envs.pythonProjects": []
 }
