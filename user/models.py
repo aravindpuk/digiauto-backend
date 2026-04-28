@@ -28,6 +28,19 @@ class User(models.Model):
 
     is_active = models.BooleanField(default=True)
     
+     # ── Required by DRF's IsAuthenticated permission check ────────────────────
+    # Our User is a plain Model, not AbstractBaseUser, so DRF can't find these
+    # attributes automatically. Adding them as properties fixes the error:
+    #   AttributeError: 'User' object has no attribute 'is_authenticated'
+   
+    @property
+    def is_authenticated(self):
+        return True
+ 
+    @property
+    def is_anonymous(self):
+        return False
+
     def set_pin(self, raw_pin):
         self.pin = make_password(raw_pin)
 

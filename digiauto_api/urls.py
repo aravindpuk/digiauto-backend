@@ -19,11 +19,13 @@ from django.urls import path,include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('',include('digiauto.urls')),
     path('user/',include('user.urls')),
-    path('garage/',include('garage.urls')),
+    path('garages/',include('garage.urls')),
     path('jobcard/',include('jobcard.urls')),
     path('spare/',include('spare.urls')),
     path('labour/',include('labour.urls')),
     
 ]
+
+
+

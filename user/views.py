@@ -1,94 +1,123 @@
-from django.http import HttpResponse
-from django.shortcuts import render
-
-# Create your views here.
-
-
-from rest_framework.views import APIView
-from rest_framework.generics import CreateAPIView
-from rest_framework.response import Response
+from django.utils import timezone
 from rest_framework import status
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework.exceptions import ValidationError
 
-from user.serializer.user_serializer import UserRoleSerializer, UserSerializer,UserRole
-from . models import LoginInfo,User, UserRole
-
-from django.utils import timezone
+from user.models import LoginInfo, User, UserRole
+from user.serializer.user_serializer import UserSerializer
 
 
-def get_userRoles(request):
-    roles = UserRole.objects.filter(name__in=['admin','customer'])
-    serializer = UserRoleSerializer(roles,many=True)
-    return Response({'user_roles':serializer.data})
+# ─── Register ────────────────────────────────────────────────────────────────
 
 class RegisterUser(APIView):
-
-    def post(self,request):
+    """
+    POST /user/register/
+    Body: { name, mobile, pin, role }
+    role must be an existing UserRole name e.g. "admin" / "staff"
+    """
+    def post(self, request):
         try:
-           
-            _serializer = UserSerializer(data=request.data)
-            if _serializer.is_valid(raise_exception=True):
-                _serializer.save()
-                return Response({'message':'user saved...'},status=201)
+            serializer = UserSerializer(data=request.data)
+            if serializer.is_valid(raise_exception=True):
+                serializer.save()
+                return Response(
+                    {"message": "Registration successful. Please log in."},
+                    status=status.HTTP_201_CREATED,
+                )
         except ValidationError:
-                errors = _serializer.errors
-                field, message = next(iter(errors.items()))
-                
-                return Response({'message':f"user Reg failed .. {message[0]}"},status=400)
+            errors = serializer.errors
+            field, messages = next(iter(errors.items()))
+            return Response(
+                {"message": f"{field}: {messages[0]}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         except Exception as e:
-            print(e)
-            return Response({'message':str(e)},status=400)
+            return Response(
+                {"message": str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
 
-    
-        
+# ─── Login ────────────────────────────────────────────────────────────────────
 
-
-@api_view(['POST'])
+@api_view(["POST"])
 def login(request):
-    try:
-        mobile = request.data.get('mobile')
-        pin = request.data.get('pin')
+    """
+    POST /user/login/
+    Body: { mobile, pin }
 
-        if not mobile or not pin:
-            return Response({'message': 'Mobile and PIN are required'}, status=status.HTTP_400_BAD_REQUEST)
+    Response:
+    {
+        "message": "Login successful",
+        "token": "<jwt>",
+        "garage_id": <int> | null,
+        "branch_id": <int> | null
+    }
+    garage_id is null when the user has not registered a garage yet.
+    The Flutter app uses this to decide whether to redirect to GarageScreen.
+    """
+    mobile = request.data.get("mobile", "").strip()
+    pin    = request.data.get("pin", "").strip()
 
-        try:
-            
-            user = User.objects.get(mobile=mobile)
-        except User.DoesNotExist as u:
-            print(u)
-            return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
-
-        if not user.check_pin(pin):
-            return Response({'message': 'Invalid PIN'}, status=status.HTTP_401_UNAUTHORIZED)
-
-        # Create a login info record
-        login = LoginInfo.objects.create(user=user, login_status=True)
-        token = login.generate_auth_token()
-
-        branch = user.branches.select_related('garage').first()
-        return Response({
-                'message': 'Login successful',
-                'token': token,
-                'garage':branch.garage.id if branch else None #currently 
-                # 'user': user.id,            
-                
-        }, status=status.HTTP_200_OK)
-    
-        # return HttpResponse('login view')
-
-    except Exception as e:
-        print(e)
-        return  Response({'message': str(e)}, status=status.HTTP_404_NOT_FOUND)
-
-
-
-@api_view(['POST'])
-def logout(request):
-    user = request.user
-    LoginInfo.objects.filter(user=user, Login_status=True).update(
-        login_status=False, logout_time=timezone.now()
+    if not mobile or not pin:
+        return Response(
+            {"message": "Mobile and PIN are required."},
+            status=status.HTTP_400_BAD_REQUEST,
         )
-    return Response({'message': 'Logged out successfully'},status=status.HTTP_200_OK)
+
+    try:
+        user = User.objects.get(mobile=mobile)
+    except User.DoesNotExist:
+        return Response(
+            {"message": "No account found with this mobile number."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    if not user.is_active:
+        return Response(
+            {"message": "Your account has been deactivated."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    if not user.check_pin(pin):
+        return Response(
+            {"message": "Invalid PIN. Please try again."},
+            status=status.HTTP_401_UNAUTHORIZED,
+        )
+
+    # Create login record & generate token
+    login_info = LoginInfo.objects.create(user=user)
+    token = login_info.generate_auth_token()
+
+    # Resolve garage and branch for this user
+    branch  = user.branches.select_related("garage").first()
+    garage_id = branch.garage.id if branch else None
+    branch_id = branch.id       if branch else None
+
+    return Response(
+        {
+            "message": "Login successful",
+            "token":     token,
+            "garage_id": garage_id,
+            "branch_id": branch_id,
+        },
+        status=status.HTTP_200_OK,
+    )
+
+
+# ─── Logout ───────────────────────────────────────────────────────────────────
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def logout(request):
+    LoginInfo.objects.filter(user=request.user, login_status=True).update(
+        login_status=False,
+        logout_time=timezone.now(),
+    )
+    return Response(
+        {"message": "Logged out successfully."},
+        status=status.HTTP_200_OK,
+    )
