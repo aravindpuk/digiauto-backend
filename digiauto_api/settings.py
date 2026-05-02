@@ -103,10 +103,10 @@ WSGI_APPLICATION = 'digiauto_api.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'digiauto_db_7esp',
-        'USER':'digiauto_db_7esp_user',
-        'PASSWORD':'FmWf8p9ocqMOOOfXS5AbDLn5mptWhE9a',
-        'HOST':'dpg-d62rrlshg0os73erk750-a',
+        'NAME': 'digiauto_db_44ui',
+        'USER':'aravind',
+        'PASSWORD':'ABLQ7wH0lr2WFxL3DduETlUQEr08rdCx',
+        'HOST':'dpg-d7qu5u9kh4rs73egkcs0-a',
         'PORT':'5432'
     }
 }
