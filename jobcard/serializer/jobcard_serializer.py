@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from rest_framework import serializers
 from jobcard.models import JobCard, JobCardLabour, JobCardSpare
 
@@ -59,13 +61,10 @@ class JobCardListSerializer(serializers.ModelSerializer):
         return obj.vehicle.user.address if obj.vehicle else ""
 
     def get_services(self, obj):
-        return [c.text for c in obj.complaints.all()]
+        return [{"id": c.id, "text": c.text} for c in obj.complaints.all()]
 
     def get_total(self, obj):
-        try:
-            return str(obj.invoice.total_amount)
-        except Exception:
-            return "-"
+        return str(_jobcard_total(obj))
 
 
 class JobCardDetailSerializer(serializers.ModelSerializer):
@@ -76,6 +75,7 @@ class JobCardDetailSerializer(serializers.ModelSerializer):
     branch_id    = serializers.IntegerField(source="branch.id",  read_only=True)
     branch_name  = serializers.CharField(source="branch.name",  read_only=True)
     vehicle_number  = serializers.SerializerMethodField()
+    vehicle_model_id = serializers.SerializerMethodField()
     vehicle_model   = serializers.SerializerMethodField()
     vehicle_make    = serializers.SerializerMethodField()
     year            = serializers.SerializerMethodField()
@@ -95,7 +95,7 @@ class JobCardDetailSerializer(serializers.ModelSerializer):
         model  = JobCard
         fields = [
             "id", "garage_id", "garage_name", "branch_id", "branch_name",
-            "vehicle_number", "vehicle_model", "vehicle_make", "year",
+            "vehicle_number", "vehicle_model_id", "vehicle_model", "vehicle_make", "year",
             "chassis_number", "engine_number",
             "customer_name", "mobile", "place",
             "kilometer", "status", "created_at", "created_by_name",
@@ -115,6 +115,11 @@ class JobCardDetailSerializer(serializers.ModelSerializer):
         if obj.vehicle and obj.vehicle.vehicle_model:
             return obj.vehicle.vehicle_model.name
         return ""
+
+    def get_vehicle_model_id(self, obj):
+        if obj.vehicle and obj.vehicle.vehicle_model:
+            return obj.vehicle.vehicle_model_id
+        return None
 
     def get_vehicle_make(self, obj):
         if obj.vehicle and obj.vehicle.vehicle_model:
@@ -141,7 +146,13 @@ class JobCardDetailSerializer(serializers.ModelSerializer):
         return obj.vehicle.user.address if obj.vehicle else ""
 
     def get_services(self, obj):
-        return [c.text for c in obj.complaints.all()]
+        return [
+            {
+                "id": c.id,
+                "text": c.text,
+            }
+            for c in obj.complaints.all()
+        ]
 
     def get_spares(self, obj):
         return [
@@ -150,6 +161,8 @@ class JobCardDetailSerializer(serializers.ModelSerializer):
                 "part_name": s.spare.partname,
                 "quantity":  s.quantity,
                 "mrp":       str(s.mrp),
+                "amount":    str(s.mrp * s.quantity),
+                "services":  [{"id": c.id, "text": c.text} for c in s.complaints.all()],
             }
             for s in obj.spares.select_related("spare").all()
         ]
@@ -158,14 +171,26 @@ class JobCardDetailSerializer(serializers.ModelSerializer):
         return [
             {
                 "id":          lb.id,
+                "labour_id":   lb.labour_id,
                 "labour_name": lb.labour.name,
+                "amount":      str(lb.amount),
                 "technician":  lb.technician.name if lb.technician else None,
+                "services":    [{"id": c.id, "text": c.text} for c in lb.complaints.all()],
             }
             for lb in obj.labour_services.select_related("labour", "technician").all()
         ]
 
     def get_total(self, obj):
-        try:
-            return str(obj.invoice.total_amount)
-        except Exception:
-            return "-"
+        return str(_jobcard_total(obj))
+
+
+def _jobcard_total(obj):
+    spare_total = sum(
+        (spare.mrp or Decimal("0.00")) * spare.quantity
+        for spare in obj.spares.all()
+    )
+    labour_total = sum(
+        labour.amount or Decimal("0.00")
+        for labour in obj.labour_services.all()
+    )
+    return spare_total + labour_total

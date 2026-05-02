@@ -29,7 +29,8 @@ class JobCardView(APIView):
               .select_related("branch__garage",
                               "vehicle__vehicle_model__fkMaker",
                               "status", "created_by")
-              .prefetch_related("complaints", "mechanic")
+              .prefetch_related("complaints", "mechanic", "spares",
+                                "labour_services")
               .order_by("-created_at"))
 
         branch_id = request.query_params.get("branch_id")
@@ -124,7 +125,9 @@ class JobCardDetailView(APIView):
                                 "vehicle__vehicle_model__fkMaker",
                                 "status", "created_by")
                 .prefetch_related("complaints", "mechanic",
-                                  "spares__spare", "labour_services__labour")
+                                  "spares__spare", "spares__complaints",
+                                  "labour_services__labour",
+                                  "labour_services__complaints")
                 .filter(id=jobcard_id).first())
 
     # ── DETAIL ────────────────────────────────────────────────────────────────
@@ -203,7 +206,8 @@ class JobCardDetailView(APIView):
         _update_vehicle(vehicle, vehicle_model, data)
         _update_customer(vehicle.user,
                          data.get("customer_name", vehicle.user.name),
-                         data.get("place", vehicle.user.address))
+                         data.get("place", vehicle.user.address),
+                         data.get("mobile", vehicle.user.mobile))
         jobcard.save()
         return Response(
             {"message": "Job card updated.",
@@ -271,6 +275,10 @@ def _resolve_vehicle_model(model_name, make_name):
 
 def _update_vehicle(vehicle, vehicle_model, data):
     changed = False
+    vehicle_number = data.get("vehicle_number", "").strip().upper()
+    if vehicle_number and vehicle.vehicle_number != vehicle_number:
+        vehicle.vehicle_number = vehicle_number
+        changed = True
     if vehicle_model and vehicle.vehicle_model_id != vehicle_model.id:
         vehicle.vehicle_model = vehicle_model
         changed = True
@@ -283,7 +291,7 @@ def _update_vehicle(vehicle, vehicle_model, data):
         vehicle.save()
 
 
-def _update_customer(customer, name, address):
+def _update_customer(customer, name, address, mobile=None):
     changed = False
     if name and customer.name != name:
         customer.name = name
@@ -291,8 +299,11 @@ def _update_customer(customer, name, address):
     if address and customer.address != address:
         customer.address = address
         changed = True
+    if mobile and customer.mobile != mobile:
+        customer.mobile = mobile
+        changed = True
     if changed:
-        customer.save(update_fields=["name", "address"])
+        customer.save(update_fields=["name", "address", "mobile"])
 
 
 def _set_complaints(jobcard, services):
