@@ -88,28 +88,28 @@ WSGI_APPLICATION = 'digiauto_api.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'digiauto_db',
-        'USER':'digiadmin',
-        'PASSWORD':'digiauto10@2025',
-        'HOST':'localhost',
-        'PORT':'5432'
-    }
-}
-
-###### render ########
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': 'digiauto_db_7esp',
-#         'USER':'digiauto_db_7esp_user',
-#         'PASSWORD':'FmWf8p9ocqMOOOfXS5AbDLn5mptWhE9a',
-#         'HOST':'dpg-d62rrlshg0os73erk750-a',
+#         'NAME': 'digiauto_db',
+#         'USER':'digiadmin',
+#         'PASSWORD':'digiauto10@2025',
+#         'HOST':'localhost',
 #         'PORT':'5432'
 #     }
 # }
+
+###### render ########
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'digiauto_db_7esp',
+        'USER':'digiauto_db_7esp_user',
+        'PASSWORD':'FmWf8p9ocqMOOOfXS5AbDLn5mptWhE9a',
+        'HOST':'dpg-d62rrlshg0os73erk750-a',
+        'PORT':'5432'
+    }
+}
 
 
 # Password validation
