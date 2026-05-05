@@ -3,9 +3,11 @@ from django.db import models
 # Create your models here.
 
 class Spare(models.Model):
-    partnumber = models.CharField(max_length=50)
+    partnumber = models.CharField(max_length=50, blank=True, default="")
     partname   = models.CharField(max_length=255)
-    
+
+    def __str__(self):
+        return self.partname
 
 class SparePurchaseData(models.Model):
     mrp             = models.DecimalField(max_digits=10, decimal_places=2)
