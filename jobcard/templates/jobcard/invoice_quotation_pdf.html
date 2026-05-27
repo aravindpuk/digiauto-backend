@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>{{ document_title }}</title>
+<style>
+@page { size: A4; margin: 10mm; }
+body {
+    margin: 0;
+    background: #ffffff;
+    font-family: Arial, Helvetica, sans-serif;
+    color: #333333;
+    font-size: 13px;
+    line-height: 1.5;
+}
+.invoice-container { width: 100%; background: #ffffff; }
+.inner-padding { padding: 10mm; }
+.header-banner {
+    width: 100%;
+    overflow: hidden;
+    background: #2e7ba6;
+    color: #ffffff;
+    border-bottom: 4px solid #ff5733;
+}
+.garage-details { width: 68%; float: left; padding: 22px; }
+.invoice-title-wrapper { width: 28%; float: right; text-align: right; padding: 22px; }
+.garage-details h1 { margin: 0; font-size: 26px; text-transform: uppercase; }
+.garage-details p { margin: 4px 0; color: #e7f3fa; font-size: 13px; }
+.invoice-title-area {
+    display: inline-block;
+    background: #ffffff;
+    color: #2e7ba6;
+    padding: 12px 18px;
+    border-radius: 4px;
+}
+.invoice-title-area h2 { margin: 0; font-size: 22px; letter-spacing: 1px; text-transform: uppercase; }
+.invoice-meta {
+    width: 100%;
+    overflow: hidden;
+    margin: 20px 0 25px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #dddddd;
+}
+.meta-item { width: 240px; }
+.left { float: left; }
+.right { float: right; text-align: right; }
+.meta-label {
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #666666;
+    margin-bottom: 5px;
+}
+.meta-value { font-size: 15px; font-weight: bold; }
+.info-section { width: 100%; overflow: hidden; margin-bottom: 25px; }
+.info-box {
+    width: 45%;
+    float: left;
+    background: #f4f7f9;
+    border-left: 4px solid #2e7ba6;
+    padding: 16px;
+    min-height: 135px;
+}
+.info-box.right { float: right; text-align: left; }
+.info-box h3 {
+    margin: 0 0 14px;
+    font-size: 15px;
+    text-transform: uppercase;
+    color: #2e7ba6;
+    border-bottom: 1px solid #dcdcdc;
+    padding-bottom: 8px;
+}
+.info-item { margin-bottom: 9px; overflow: hidden; }
+.info-label { width: 105px; float: left; color: #666666; }
+.info-value { margin-left: 115px; font-weight: 600; word-break: break-word; }
+.table-section { margin-bottom: 28px; }
+.table-section h3 { margin-bottom: 10px; font-size: 15px; text-transform: uppercase; }
+table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+th, td { border: 1px solid #e2e2e2; padding: 9px; vertical-align: top; word-wrap: break-word; }
+th { background: #2e7ba6; color: #ffffff; font-size: 12px; text-transform: uppercase; }
+tbody tr:nth-child(even) { background: #fafafa; }
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.totals-wrapper { width: 100%; overflow: hidden; margin-top: 20px; }
+.notes { width: 56%; float: left; font-size: 12px; color: #666666; }
+.notes strong { color: #333333; }
+.totals-container { width: 38%; float: right; }
+.totals-box { border: 1px solid #dcdcdc; background: #f4f7f9; padding: 14px; }
+.totals-table td { border: none; padding: 6px 0; }
+.divider { border-top: 1px solid #cccccc; margin: 8px 0; }
+.grand-total td { font-size: 19px; font-weight: bold; color: #ff5733; padding-top: 12px; }
+.signatures { width: 100%; overflow: hidden; margin-top: 55px; }
+.sig-box { width: 40%; float: left; text-align: center; }
+.sig-box.right { float: right; }
+.sig-line { border-top: 1px dashed #777777; padding-top: 8px; font-weight: bold; }
+.footer {
+    margin-top: 32px;
+    padding-top: 15px;
+    border-top: 1px solid #eeeeee;
+    text-align: center;
+    font-size: 11px;
+    color: #888888;
+}
+</style>
+</head>
+<body>
+<div class="invoice-container">
+    <div class="header-banner">
+        <div class="garage-details">
+            <h1>{{ garage.name|default:"Digiauto Garage" }}</h1>
+            <p>{{ branch.name|default:"Main Branch" }}</p>
+            {% if garage.email %}<p>Email: {{ garage.email }}</p>{% endif %}
+            {% if garage.mobile %}<p>Mobile: {{ garage.mobile }}</p>{% endif %}
+        </div>
+        <div class="invoice-title-wrapper">
+            <div class="invoice-title-area"><h2>{{ document_title }}</h2></div>
+        </div>
+    </div>
+
+    <div class="inner-padding">
+        <div class="invoice-meta">
+            <div class="meta-item left">
+                <span class="meta-label">{{ document_title }} Number</span>
+                <span class="meta-value">#{{ document_number }}</span>
+            </div>
+            <div class="meta-item right">
+                <span class="meta-label">{{ document_title }} Date</span>
+                <span class="meta-value">{{ document_date|date:"d M Y" }}</span>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <div class="info-box">
+                <h3>Customer Information</h3>
+                <div class="info-item"><div class="info-label">Name</div><div class="info-value">{{ customer.name|default:"-" }}</div></div>
+                <div class="info-item"><div class="info-label">Mobile</div><div class="info-value">{{ customer.mobile|default:"-" }}</div></div>
+                <div class="info-item"><div class="info-label">Place</div><div class="info-value">{{ customer.address|default:"-" }}</div></div>
+            </div>
+            <div class="info-box right">
+                <h3>Vehicle Information</h3>
+                <div class="info-item"><div class="info-label">Vehicle No</div><div class="info-value">{{ vehicle.vehicle_number|default:"-" }}</div></div>
+                <div class="info-item"><div class="info-label">Model</div><div class="info-value">{{ vehicle_make_name }} {{ vehicle_model_name }}</div></div>
+                <div class="info-item"><div class="info-label">KM Reading</div><div class="info-value">{{ jobcard.kilometer }} KM</div></div>
+            </div>
+        </div>
+
+        <div class="table-section">
+            <h3>Labour & Services</h3>
+            <table>
+                <thead><tr><th width="10%">Sl No</th><th width="70%">Description</th><th width="20%">Amount</th></tr></thead>
+                <tbody>
+                    {% for item in labour_items %}
+                    <tr>
+                        <td class="text-center">{{ forloop.counter }}</td>
+                        <td>{{ item.labour.name }}</td>
+                        <td class="text-right">Rs {{ item.amount|floatformat:2 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="3" class="text-center">No labour added.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="table-section">
+            <h3>Spare Parts</h3>
+            <table>
+                <thead><tr><th width="8%">Sl No</th><th width="42%">Part Name</th><th width="15%">Qty</th><th width="15%">Rate</th><th width="20%">Total</th></tr></thead>
+                <tbody>
+                    {% for item in spare_items %}
+                    <tr>
+                        <td class="text-center">{{ forloop.counter }}</td>
+                        <td>{{ item.partname }}</td>
+                        <td class="text-center">{{ item.quantity }}</td>
+                        <td class="text-right">Rs {{ item.mrp|floatformat:2 }}</td>
+                        <td class="text-right">Rs {{ item.amount|floatformat:2 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="text-center">No spare parts added.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="totals-wrapper">
+            <div class="notes">
+                <strong>Terms & Conditions:</strong><br><br>
+                1. Goods once sold will not be taken back.<br>
+                2. Warranty on spares as per manufacturer policy.<br>
+                3. This {{ document_title|lower }} is generated from job {{ jobcard.job_id_display }}.
+            </div>
+            <div class="totals-container">
+                <div class="totals-box">
+                    <table class="totals-table">
+                        <tr><td>Total Labour</td><td class="text-right">Rs {{ labour_total|floatformat:2 }}</td></tr>
+                        <tr><td>Total Spares</td><td class="text-right">Rs {{ spare_total|floatformat:2 }}</td></tr>
+                        <tr><td colspan="2"><div class="divider"></div></td></tr>
+                        <tr class="grand-total"><td>Grand Total</td><td class="text-right">Rs {{ grand_total|floatformat:2 }}</td></tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="signatures">
+            <div class="sig-box"><div class="sig-line">Customer Signature</div></div>
+            <div class="sig-box right"><div class="sig-line">Authorized Signatory</div></div>
+        </div>
+
+        <div class="footer">
+            <p>Thank you for your business. Drive safe.</p>
+            <p>This is a computer-generated {{ document_title|lower }}.</p>
+        </div>
+    </div>
+</div>
+</body>
+</html>
