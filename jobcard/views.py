@@ -1,3 +1,4 @@
+import re
 from decimal import Decimal
 
 import jwt
@@ -268,7 +269,7 @@ class JobCardDocumentView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         response = HttpResponse(content_type="application/pdf")
-        filename = f"{context['document_number']}.pdf"
+        filename = _document_filename(context)
         response["Content-Disposition"] = f'attachment; filename="{filename}"'
         result = pisa.CreatePDF(html, dest=response, encoding="UTF-8")
         if result.err:
@@ -424,21 +425,28 @@ def _document_context(jobcard, document_type):
     spare_total = sum((item.mrp or Decimal("0.00")) * item.quantity
                       for item in jobcard_spares)
     grand_total = labour_total + spare_total
-    today = timezone.localdate()
+    now = timezone.localtime(timezone.now())
+    today = now.date()
+    document_number = _make_document_number(
+        "INV" if document_type == "invoice" else "QT",
+        today,
+        jobcard.id,
+    )
 
     invoice = None
     if document_type == "invoice":
-        invoice_number = f"INV-{today.year}-{jobcard.id:05d}"
         invoice, _ = Invoice.objects.get_or_create(
             jobcard=jobcard,
             defaults={
-                "invoice_number": invoice_number,
+                "invoice_number": document_number,
                 "total_amount": grand_total,
             },
         )
+        if invoice.invoice_number != document_number:
+            invoice.invoice_number = document_number
         if invoice.total_amount != grand_total:
             invoice.total_amount = grand_total
-            invoice.save(update_fields=["total_amount"])
+        invoice.save(update_fields=["invoice_number", "total_amount"])
 
     vehicle = jobcard.vehicle
     customer = vehicle.user if vehicle else None
@@ -446,7 +454,7 @@ def _document_context(jobcard, document_type):
     garage = jobcard.branch.garage
     return {
         "document_title": "Invoice" if document_type == "invoice" else "Quotation",
-        "document_number": invoice.invoice_number if invoice else f"QT-{today.year}-{jobcard.id:05d}",
+        "document_number": invoice.invoice_number if invoice else document_number,
         "document_date": invoice.date if invoice else today,
         "jobcard": jobcard,
         "garage": garage,
@@ -469,3 +477,16 @@ def _document_context(jobcard, document_type):
         "spare_total": spare_total,
         "grand_total": grand_total,
     }
+
+
+def _make_document_number(prefix, date_value, jobcard_id):
+    return f"{prefix}-{date_value:%d%m%Y}{jobcard_id}"
+
+
+def _document_filename(context):
+    customer = context["customer"]
+    customer_name = getattr(customer, "name", "") if customer else ""
+    clean_name = re.sub(r"[^A-Za-z0-9]+", "_", customer_name).strip("_")
+    if not clean_name:
+        clean_name = "customer"
+    return f"{clean_name}_{context['document_number']}.pdf"

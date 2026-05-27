@@ -4,213 +4,425 @@
 <meta charset="UTF-8">
 <title>{{ document_title }}</title>
 <style>
-@page { size: A4; margin: 10mm; }
+@page {
+    size: A4;
+    margin: 10mm;
+    background-color: #ffffff;
+}
+html {
+    background-color: #ffffff;
+}
 body {
     margin: 0;
+    padding: 0;
     background: #ffffff;
-    font-family: Arial, Helvetica, sans-serif;
     color: #333333;
-    font-size: 13px;
-    line-height: 1.5;
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 12px;
 }
-.invoice-container { width: 100%; background: #ffffff; }
-.inner-padding { padding: 10mm; }
-.header-banner {
+table {
+    border-collapse: collapse;
+}
+.header {
     width: 100%;
-    overflow: hidden;
-    background: #2e7ba6;
+    background-color: #2f80ab;
     color: #ffffff;
     border-bottom: 4px solid #ff5733;
 }
-.garage-details { width: 68%; float: left; padding: 22px; }
-.invoice-title-wrapper { width: 28%; float: right; text-align: right; padding: 22px; }
-.garage-details h1 { margin: 0; font-size: 26px; text-transform: uppercase; }
-.garage-details p { margin: 4px 0; color: #e7f3fa; font-size: 13px; }
-.invoice-title-area {
-    display: inline-block;
-    background: #ffffff;
-    color: #2e7ba6;
-    padding: 12px 18px;
+.header td {
+    border: 0;
+}
+.garage {
+    padding: 24px 28px 22px 28px;
+}
+.garage-name {
+    margin: 0 0 8px 0;
+    color: #ffffff;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+.garage-line {
+    color: #edf7fb;
+    font-size: 13px;
+    line-height: 1.45;
+}
+.title-cell {
+    width: 220px;
+    padding: 24px 26px 22px 0;
+    text-align: right;
+    vertical-align: top;
+}
+.title-badge {
+    padding: 14px 24px;
+    background-color: #ffffff;
+    color: #2f80ab;
     border-radius: 4px;
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: 2px;
 }
-.invoice-title-area h2 { margin: 0; font-size: 22px; letter-spacing: 1px; text-transform: uppercase; }
-.invoice-meta {
+.content {
+    padding: 42px 40px 0 40px;
+    background-color: #ffffff;
+}
+.meta {
     width: 100%;
-    overflow: hidden;
-    margin: 20px 0 25px;
-    padding-bottom: 15px;
     border-bottom: 1px solid #dddddd;
+    margin-bottom: 28px;
 }
-.meta-item { width: 240px; }
-.left { float: left; }
-.right { float: right; text-align: right; }
+.meta td {
+    border: 0;
+    padding: 0 0 16px 0;
+}
 .meta-label {
     display: block;
-    font-size: 11px;
-    text-transform: uppercase;
     color: #666666;
-    margin-bottom: 5px;
-}
-.meta-value { font-size: 15px; font-weight: bold; }
-.info-section { width: 100%; overflow: hidden; margin-bottom: 25px; }
-.info-box {
-    width: 45%;
-    float: left;
-    background: #f4f7f9;
-    border-left: 4px solid #2e7ba6;
-    padding: 16px;
-    min-height: 135px;
-}
-.info-box.right { float: right; text-align: left; }
-.info-box h3 {
-    margin: 0 0 14px;
-    font-size: 15px;
+    font-size: 10px;
     text-transform: uppercase;
-    color: #2e7ba6;
-    border-bottom: 1px solid #dcdcdc;
-    padding-bottom: 8px;
+    margin-bottom: 7px;
 }
-.info-item { margin-bottom: 9px; overflow: hidden; }
-.info-label { width: 105px; float: left; color: #666666; }
-.info-value { margin-left: 115px; font-weight: 600; word-break: break-word; }
-.table-section { margin-bottom: 28px; }
-.table-section h3 { margin-bottom: 10px; font-size: 15px; text-transform: uppercase; }
-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-th, td { border: 1px solid #e2e2e2; padding: 9px; vertical-align: top; word-wrap: break-word; }
-th { background: #2e7ba6; color: #ffffff; font-size: 12px; text-transform: uppercase; }
-tbody tr:nth-child(even) { background: #fafafa; }
-.text-center { text-align: center; }
-.text-right { text-align: right; }
-.totals-wrapper { width: 100%; overflow: hidden; margin-top: 20px; }
-.notes { width: 56%; float: left; font-size: 12px; color: #666666; }
-.notes strong { color: #333333; }
-.totals-container { width: 38%; float: right; }
-.totals-box { border: 1px solid #dcdcdc; background: #f4f7f9; padding: 14px; }
-.totals-table td { border: none; padding: 6px 0; }
-.divider { border-top: 1px solid #cccccc; margin: 8px 0; }
-.grand-total td { font-size: 19px; font-weight: bold; color: #ff5733; padding-top: 12px; }
-.signatures { width: 100%; overflow: hidden; margin-top: 55px; }
-.sig-box { width: 40%; float: left; text-align: center; }
-.sig-box.right { float: right; }
-.sig-line { border-top: 1px dashed #777777; padding-top: 8px; font-weight: bold; }
-.footer {
-    margin-top: 32px;
-    padding-top: 15px;
-    border-top: 1px solid #eeeeee;
+.meta-value {
+    color: #333333;
+    font-size: 15px;
+    font-weight: 700;
+}
+.section-gap {
+    height: 24px;
+    line-height: 24px;
+}
+.info-layout {
+    width: 100%;
+}
+.info-layout td {
+    border: 0;
+    vertical-align: top;
+}
+.info-left {
+    padding-right: 12px;
+}
+.info-right {
+    padding-left: 12px;
+}
+.info-box {
+    width: 100%;
+    background-color: #f3f6f8;
+    border-left: 4px solid #2f80ab;
+}
+.info-box td {
+    border: 0;
+}
+.info-pad {
+    padding: 16px 20px 15px 20px;
+}
+.info-title {
+    color: #2f80ab;
+    font-size: 16px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #d9d9d9;
+}
+.info-row td {
+    padding-top: 8px;
+    font-size: 12px;
+    line-height: 1.4;
+}
+.info-label {
+    color: #606060;
+}
+.info-value {
+    color: #333333;
+    font-weight: 700;
+}
+.section-title {
+    margin: 28px 0 12px 0;
+    color: #333333;
+    font-size: 16px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+.items {
+    width: 100%;
+    border: 1px solid #e0e0e0;
+}
+.items th {
+    background-color: #2f80ab;
+    color: #ffffff;
+    border: 1px solid #d8e5ec;
+    padding: 12px 10px;
+    font-size: 12px;
+    font-weight: 700;
     text-align: center;
-    font-size: 11px;
+    text-transform: uppercase;
+}
+.items td {
+    border: 1px solid #e0e0e0;
+    background-color: #ffffff;
+    padding: 11px 10px;
+    font-size: 12px;
+    line-height: 1.35;
+}
+.text-center {
+    text-align: center;
+}
+.text-right {
+    text-align: right;
+}
+.summary {
+    width: 100%;
+    margin-top: 30px;
+}
+.summary td {
+    border: 0;
+    vertical-align: top;
+}
+.terms {
+    width: 56%;
+    color: #333333;
+    font-size: 12px;
+    line-height: 1.6;
+}
+.terms-title {
+    font-weight: 700;
+    margin-bottom: 14px;
+}
+.totals-wrap {
+    width: 260px;
+    background-color: #f3f6f8;
+    border: 1px solid #dddddd;
+}
+.totals td {
+    border: 0;
+    padding: 11px 16px;
+    font-size: 13px;
+}
+.total-divider td {
+    padding: 0 16px;
+}
+.line {
+    height: 1px;
+    background-color: #cccccc;
+}
+.grand td {
+    color: #ff5733;
+    font-size: 17px;
+    font-weight: 700;
+    padding-top: 14px;
+}
+.signatures {
+    width: 100%;
+    margin-top: 62px;
+}
+.signatures td {
+    border: 0;
+    width: 50%;
+    text-align: center;
+    vertical-align: bottom;
+    padding: 0 32px;
+}
+.sig-line {
+    border-top: 1px dashed #777777;
+    padding-top: 8px;
+    font-size: 12px;
+    font-weight: 700;
+}
+.footer {
+    margin-top: 36px;
+    padding-top: 14px;
+    border-top: 1px solid #eeeeee;
     color: #888888;
+    font-size: 10px;
+    text-align: center;
+    line-height: 1.5;
 }
 </style>
 </head>
 <body>
-<div class="invoice-container">
-    <div class="header-banner">
-        <div class="garage-details">
-            <h1>{{ garage.name|default:"Digiauto Garage" }}</h1>
-            <p>{{ branch.name|default:"Main Branch" }}</p>
-            {% if garage.email %}<p>Email: {{ garage.email }}</p>{% endif %}
-            {% if garage.mobile %}<p>Mobile: {{ garage.mobile }}</p>{% endif %}
-        </div>
-        <div class="invoice-title-wrapper">
-            <div class="invoice-title-area"><h2>{{ document_title }}</h2></div>
-        </div>
-    </div>
-
-    <div class="inner-padding">
-        <div class="invoice-meta">
-            <div class="meta-item left">
-                <span class="meta-label">{{ document_title }} Number</span>
-                <span class="meta-value">#{{ document_number }}</span>
-            </div>
-            <div class="meta-item right">
-                <span class="meta-label">{{ document_title }} Date</span>
-                <span class="meta-value">{{ document_date|date:"d M Y" }}</span>
-            </div>
-        </div>
-
-        <div class="info-section">
-            <div class="info-box">
-                <h3>Customer Information</h3>
-                <div class="info-item"><div class="info-label">Name</div><div class="info-value">{{ customer.name|default:"-" }}</div></div>
-                <div class="info-item"><div class="info-label">Mobile</div><div class="info-value">{{ customer.mobile|default:"-" }}</div></div>
-                <div class="info-item"><div class="info-label">Place</div><div class="info-value">{{ customer.address|default:"-" }}</div></div>
-            </div>
-            <div class="info-box right">
-                <h3>Vehicle Information</h3>
-                <div class="info-item"><div class="info-label">Vehicle No</div><div class="info-value">{{ vehicle.vehicle_number|default:"-" }}</div></div>
-                <div class="info-item"><div class="info-label">Model</div><div class="info-value">{{ vehicle_make_name }} {{ vehicle_model_name }}</div></div>
-                <div class="info-item"><div class="info-label">KM Reading</div><div class="info-value">{{ jobcard.kilometer }} KM</div></div>
-            </div>
-        </div>
-
-        <div class="table-section">
-            <h3>Labour & Services</h3>
-            <table>
-                <thead><tr><th width="10%">Sl No</th><th width="70%">Description</th><th width="20%">Amount</th></tr></thead>
-                <tbody>
-                    {% for item in labour_items %}
-                    <tr>
-                        <td class="text-center">{{ forloop.counter }}</td>
-                        <td>{{ item.labour.name }}</td>
-                        <td class="text-right">Rs {{ item.amount|floatformat:2 }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr><td colspan="3" class="text-center">No labour added.</td></tr>
-                    {% endfor %}
-                </tbody>
+            <table class="header" width="100%">
+                <tr>
+                    <td class="garage">
+                        <div class="garage-name">{{ garage.name|default:"Digiauto Garage"|upper }}</div>
+                        <div class="garage-line">
+                            {{ branch.name|default:"Main Branch" }}<br>
+                            {% if garage.email %}{{ garage.email }}<br>{% endif %}
+                            {% if garage.mobile %}Mobile: {{ garage.mobile }}{% endif %}
+                        </div>
+                    </td>
+                    <td class="title-cell">
+                        <table align="right">
+                            <tr>
+                                <td class="title-badge">{{ document_title|upper }}</td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
             </table>
-        </div>
 
-        <div class="table-section">
-            <h3>Spare Parts</h3>
-            <table>
-                <thead><tr><th width="8%">Sl No</th><th width="42%">Part Name</th><th width="15%">Qty</th><th width="15%">Rate</th><th width="20%">Total</th></tr></thead>
-                <tbody>
-                    {% for item in spare_items %}
+            <div class="content">
+                <table class="meta" width="100%">
                     <tr>
-                        <td class="text-center">{{ forloop.counter }}</td>
-                        <td>{{ item.partname }}</td>
-                        <td class="text-center">{{ item.quantity }}</td>
-                        <td class="text-right">Rs {{ item.mrp|floatformat:2 }}</td>
-                        <td class="text-right">Rs {{ item.amount|floatformat:2 }}</td>
+                        <td>
+                            <span class="meta-label">{{ document_title }} Number</span>
+                            <span class="meta-value">#{{ document_number }}</span>
+                        </td>
+                        <td class="text-right">
+                            <span class="meta-label">{{ document_title }} Date</span>
+                            <span class="meta-value">{{ document_date|date:"d M Y" }}</span>
+                        </td>
                     </tr>
-                    {% empty %}
-                    <tr><td colspan="5" class="text-center">No spare parts added.</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                </table>
 
-        <div class="totals-wrapper">
-            <div class="notes">
-                <strong>Terms & Conditions:</strong><br><br>
-                1. Goods once sold will not be taken back.<br>
-                2. Warranty on spares as per manufacturer policy.<br>
-                3. This {{ document_title|lower }} is generated from job {{ jobcard.job_id_display }}.
-            </div>
-            <div class="totals-container">
-                <div class="totals-box">
-                    <table class="totals-table">
-                        <tr><td>Total Labour</td><td class="text-right">Rs {{ labour_total|floatformat:2 }}</td></tr>
-                        <tr><td>Total Spares</td><td class="text-right">Rs {{ spare_total|floatformat:2 }}</td></tr>
-                        <tr><td colspan="2"><div class="divider"></div></td></tr>
-                        <tr class="grand-total"><td>Grand Total</td><td class="text-right">Rs {{ grand_total|floatformat:2 }}</td></tr>
-                    </table>
+                <table class="info-layout" width="100%">
+                    <tr>
+                        <td width="50%" class="info-left">
+                            <table class="info-box" width="100%">
+                                <tr>
+                                    <td class="info-pad">
+                                        <div class="info-title">Customer Information</div>
+                                        <table width="100%">
+                                            <tr class="info-row">
+                                                <td class="info-label" width="42%">Name</td>
+                                                <td class="info-value" width="58%">{{ customer.name|default:"-" }}</td>
+                                            </tr>
+                                            <tr class="info-row">
+                                                <td class="info-label" width="42%">Mobile</td>
+                                                <td class="info-value" width="58%">{{ customer.mobile|default:"-" }}</td>
+                                            </tr>
+                                            <tr class="info-row">
+                                                <td class="info-label" width="42%">Place</td>
+                                                <td class="info-value" width="58%">{{ customer.address|default:"-" }}</td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                        <td width="50%" class="info-right">
+                            <table class="info-box" width="100%">
+                                <tr>
+                                    <td class="info-pad">
+                                        <div class="info-title">Vehicle Information</div>
+                                        <table width="100%">
+                                            <tr class="info-row">
+                                                <td class="info-label" width="42%">Vehicle No</td>
+                                                <td class="info-value" width="58%">{{ vehicle.vehicle_number|default:"-" }}</td>
+                                            </tr>
+                                            <tr class="info-row">
+                                                <td class="info-label" width="42%">Model</td>
+                                                <td class="info-value" width="58%">{{ vehicle_make_name }} {{ vehicle_model_name }}</td>
+                                            </tr>
+                                            <tr class="info-row">
+                                                <td class="info-label" width="42%">KM Reading</td>
+                                                <td class="info-value" width="58%">{{ jobcard.kilometer }} KM</td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+
+                {% if labour_items %}
+                <div class="section-title">Labour &amp; Services</div>
+                <table class="items" width="100%">
+                    <thead>
+                        <tr>
+                            <th width="10%">Sl No</th>
+                            <th width="70%">Description</th>
+                            <th width="20%">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in labour_items %}
+                        <tr>
+                            <td class="text-center">{{ forloop.counter }}</td>
+                            <td>{{ item.labour.name }}</td>
+                            <td class="text-right">Rs {{ item.amount|floatformat:2 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+
+                {% if spare_items %}
+                <div class="section-title">Spare Parts</div>
+                <table class="items" width="100%">
+                    <thead>
+                        <tr>
+                            <th width="8%">Sl No</th>
+                            <th width="42%">Part Name</th>
+                            <th width="15%">Qty</th>
+                            <th width="15%">Rate</th>
+                            <th width="20%">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in spare_items %}
+                        <tr>
+                            <td class="text-center">{{ forloop.counter }}</td>
+                            <td>{{ item.partname }}</td>
+                            <td class="text-center">{{ item.quantity }}</td>
+                            <td class="text-right">Rs {{ item.mrp|floatformat:2 }}</td>
+                            <td class="text-right">Rs {{ item.amount|floatformat:2 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+
+                <table class="summary" width="100%">
+                    <tr>
+                        <td class="terms">
+                            <div class="terms-title">Terms &amp; Conditions:</div>
+                            1. Goods once sold will not be taken back.<br>
+                            2. Warranty on spares as per manufacturer policy.<br>
+                            3. This {{ document_title|lower }} is generated from job {{ jobcard.job_id_display }}.
+                        </td>
+                        <td class="text-right">
+                            <table class="totals-wrap" width="260">
+                                <tr>
+                                    <td>
+                                        <table class="totals" width="100%">
+                                            {% if labour_items %}
+                                            <tr>
+                                                <td>Total Labour</td>
+                                                <td class="text-right">Rs {{ labour_total|floatformat:2 }}</td>
+                                            </tr>
+                                            {% endif %}
+                                            {% if spare_items %}
+                                            <tr>
+                                                <td>Total Spares</td>
+                                                <td class="text-right">Rs {{ spare_total|floatformat:2 }}</td>
+                                            </tr>
+                                            {% endif %}
+                                            <tr class="total-divider">
+                                                <td colspan="2"><div class="line"></div></td>
+                                            </tr>
+                                            <tr class="grand">
+                                                <td>Grand Total</td>
+                                                <td class="text-right">Rs {{ grand_total|floatformat:2 }}</td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+
+                <table class="signatures" width="100%">
+                    <tr>
+                        <td><div class="sig-line">Customer Signature</div></td>
+                        <td><div class="sig-line">Authorized Signatory</div></td>
+                    </tr>
+                </table>
+
+                <div class="footer">
+                    Thank you for your business. Drive safe.<br>
+                    This is a computer-generated {{ document_title|lower }}.
                 </div>
             </div>
-        </div>
-
-        <div class="signatures">
-            <div class="sig-box"><div class="sig-line">Customer Signature</div></div>
-            <div class="sig-box right"><div class="sig-line">Authorized Signatory</div></div>
-        </div>
-
-        <div class="footer">
-            <p>Thank you for your business. Drive safe.</p>
-            <p>This is a computer-generated {{ document_title|lower }}.</p>
-        </div>
-    </div>
-</div>
 </body>
 </html>
