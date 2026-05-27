@@ -7,3 +7,4 @@ packaging==26.0
 psycopg2==2.9.11
 PyJWT==2.10.1
 sqlparse==0.5.3
+xhtml2pdf==0.2.17
