@@ -261,9 +261,8 @@ class JobCardDocumentView(APIView):
         context = _document_context(jobcard, document_type)
         html = render_to_string("jobcard/invoice_quotation_pdf.html", context)
 
-        try:
-            from xhtml2pdf import pisa
-        except ImportError:
+        pdf_content = _render_document_pdf(html, request)
+        if pdf_content is None:
             return Response(
                 {"message": "PDF renderer is not installed. Run pip install -r requirements.txt."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -271,11 +270,20 @@ class JobCardDocumentView(APIView):
         response = HttpResponse(content_type="application/pdf")
         filename = _document_filename(context)
         response["Content-Disposition"] = f'attachment; filename="{filename}"'
-        result = pisa.CreatePDF(html, dest=response, encoding="UTF-8")
-        if result.err:
-            return Response({"message": "Unable to generate PDF."},
-                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        response.write(pdf_content)
         return response
+
+
+def _render_document_pdf(html, request):
+    try:
+        from weasyprint import HTML
+    except ImportError:
+        return None
+    else:
+        return HTML(
+            string=html,
+            base_url=request.build_absolute_uri("/"),
+        ).write_pdf()
 
 
 # ─── Manage Jobs list (for assistant) ─────────────────────────────────────────
