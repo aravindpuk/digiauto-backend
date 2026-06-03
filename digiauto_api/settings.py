@@ -11,19 +11,22 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+from dotenv import load_dotenv
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
+load_dotenv()
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-qmblt2551#ka%*pydfs747p7+f24i%2ez7q8)$!mw&9mpnr*pe'
+# SECRET_KEY = 'django-insecure-qmblt2551#ka%*pydfs747p7+f24i%2ez7q8)$!mw&9mpnr*pe'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG') == 'True'
+SECRET_KEY = os.getenv('SECRET_KEY')
 
 ALLOWED_HOSTS = ['*']
 
@@ -94,20 +97,19 @@ WSGI_APPLICATION = 'digiauto_api.wsgi.application'
 #         'NAME': 'digiauto_db',
 #         'USER':'digiadmin',
 #         'PASSWORD':'digiauto10@2025',
-#         'HOST':'localhost',
+#         'HOST':'db',
 #         'PORT':'5432'
 #     }
 # }
 
-###### render ########
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'digiauto_db_44ui',
-        'USER':'aravind',
-        'PASSWORD':'ABLQ7wH0lr2WFxL3DduETlUQEr08rdCx',
-        'HOST':'dpg-d7qu5u9kh4rs73egkcs0-a',
-        'PORT':'5432'
+        'NAME': os.getenv('DB_NAME'),
+        'USER': os.getenv('DB_USER'),
+        'PASSWORD': os.getenv('DB_PASSWORD'),
+        'HOST': os.getenv('DB_HOST'),
+        'PORT': os.getenv('DB_PORT'),
     }
 }
 
