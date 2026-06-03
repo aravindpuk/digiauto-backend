@@ -1,0 +1,50 @@
+# Environment Variables
+.env
+
+# Python Virtual Environments
+venv/
+env/
+env_digiauto/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / Packaging
+build/
+dist/
+*.egg-info/
+
+# Django
+db.sqlite3
+
+# Logs
+*.log
+logs/
+
+# VS Code
+.vscode/
+
+# PyCharm
+.idea/
+
+# macOS
+.DS_Store
+
+# Docker
+*.pid
+
+# Coverage
+.coverage
+htmlcov/
+
+# pytest
+.pytest_cache/
+
+# mypy
+.mypy_cache/
+
+# Temporary files
+*.tmp
+*.swp
