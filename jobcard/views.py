@@ -24,6 +24,55 @@ from .serializer.jobcard_serializer import (JobCardDetailSerializer,
 STATUS_ORDER = ["pending", "active", "completed", "delivered"]
 
 
+@api_view(["GET"])
+@permission_classes([])
+def customer_latest_jobcard(request):
+    vehicle_number = re.sub(
+        r"[^A-Z0-9]", "", request.query_params.get("vehicle_number", "").upper()
+    )
+    if len(vehicle_number) < 5:
+        return Response(
+            {"message": "A valid vehicle number is required."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    vehicle_pattern = r"[^A-Z0-9]*".join(re.escape(char) for char in vehicle_number)
+    jobcard = (
+        JobCard.objects
+        .select_related(
+            "branch__garage",
+            "vehicle__vehicle_model__fkMaker",
+            "status",
+            "created_by",
+        )
+        .prefetch_related("complaints")
+        .filter(vehicle__vehicle_number__iregex=f"^{vehicle_pattern}$")
+        .order_by("-created_at")
+        .first()
+    )
+    if not jobcard:
+        return Response(
+            {"message": "No job card found for this vehicle number."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    serialized = JobCardListSerializer(jobcard).data
+    customer_fields = (
+        "id",
+        "vehicle_number",
+        "vehicle_model",
+        "vehicle_make",
+        "customer_name",
+        "place",
+        "kilometer",
+        "status",
+        "created_at",
+        "services",
+    )
+    customer_data = {key: serialized[key] for key in customer_fields}
+    return Response({"jobcard": customer_data}, status=status.HTTP_200_OK)
+
+
 class JobCardView(APIView):
     permission_classes = [IsAuthenticated]
 
