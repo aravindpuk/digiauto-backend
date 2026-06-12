@@ -27,7 +27,11 @@ load_dotenv()
 DEBUG = os.getenv('DEBUG') == 'True'
 SECRET_KEY = os.getenv('SECRET_KEY')
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = [
+    "services.digiauto.co.in",
+    "localhost",
+    "127.0.0.1",
+]
 
 CORS_ALLOW_ALL_ORIGINS = True
 
