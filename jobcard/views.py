@@ -328,8 +328,7 @@ class JobCardViewDocument(APIView):
 
         context = _document_context(jobcard, document_type)
         context["show_whatsapp_button"] = True
-        share_url = request.build_absolute_uri(
-            reverse("jobcard-share-whatsapp", args=[jobcard.id]))
+        share_url = settings.PUBLIC_SITE_URL + reverse("jobcard-share-whatsapp", args=[jobcard.id])
         if token:
             share_url += f"?token={token}"
         context["share_endpoint"] = share_url
@@ -466,9 +465,10 @@ class ShareWhatsAppView(APIView):
                         status=status.HTTP_400_BAD_REQUEST)
 
                 token = signing.Signer(salt=QUOTATION_SHARE_SALT).sign(str(jobcard.id))
-                quotation_url = request.build_absolute_uri(
-                    reverse("jobcard-public-quotation", args=[token]))
-
+                # quotation_url = request.build_absolute_uri(
+                #     reverse("jobcard-public-quotation", args=[token]))
+                quotation_url = settings.PUBLIC_SITE_URL + reverse("jobcard-public-quotation", args=[token])
+        
                 whatsapp_response = send_quotation_whatsapp(
                     mobile=customer.mobile,
                     customer_name=customer.name,
@@ -483,8 +483,7 @@ class ShareWhatsAppView(APIView):
 
                 token = signing.TimestampSigner(salt=INVOICE_SHARE_SALT).sign(
                     str(jobcard.id))
-                pdf_url = request.build_absolute_uri(
-                    reverse("jobcard-invoice-pdf", args=[token]))
+                pdf_url = settings.PUBLIC_SITE_URL + reverse("jobcard-invoice-pdf", args=[token])
               
 
                 whatsapp_response = send_invoice_whatsapp(

@@ -27,7 +27,12 @@ load_dotenv()
 DEBUG = os.getenv('DEBUG') == 'True'
 SECRET_KEY = os.getenv('SECRET_KEY')
 
+PUBLIC_SITE_URL = "https://services.digiauto.co.in"
+
 MSG91_AUTH_KEY = os.environ.get("MSG91_AUTH_KEY", "")
+
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_X_FORWARDED_HOST = True
 
 ALLOWED_HOSTS = [
     "services.digiauto.co.in",
