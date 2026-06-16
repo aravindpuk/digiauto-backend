@@ -2,10 +2,15 @@ import re
 from decimal import Decimal
 
 import jwt
+import requests
 from django.conf import settings
+from django.core import signing
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
 from django.db import transaction
 from django.http import HttpResponse
 from django.template.loader import render_to_string
+from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -19,9 +24,15 @@ from .models import (Complaint, Invoice, JobCard, JobCardLabour, JobCardSpare,
                      JobStatus, Vehicle, VehicleMake, VehicleModel)
 from .serializer.jobcard_serializer import (JobCardDetailSerializer,
                                             JobCardListSerializer)
+from .utils.whatsapp import send_invoice_whatsapp, send_quotation_whatsapp
 
 # Status progression order
 STATUS_ORDER = ["pending", "active", "completed", "delivered"]
+
+# Salt used to sign the public, customer-facing quotation link.
+QUOTATION_SHARE_SALT = "jobcard-quotation-view"
+INVOICE_SHARE_SALT = "jobcard-invoice-pdf"
+INVOICE_LINK_MAX_AGE = 60 * 60 * 24 # 24 hours — plenty of time for MSG91 to fetch it
 
 
 @api_view(["GET"])
@@ -272,6 +283,61 @@ class JobCardDetailView(APIView):
             status=status.HTTP_200_OK)
 
 
+class JobCardViewDocument(APIView):
+    """
+    GET /jobcard/jobcards/<id>/view/?token=<jwt>
+
+    Renders the quotation/invoice as a normal HTML page so garage staff
+    can view it straight in the browser (opened from the Flutter app's
+    "View Quotation/Invoice" button). Includes a "Share to WhatsApp"
+    button that is not part of the bill and never appears in the PDF.
+    """
+    authentication_classes = []
+    permission_classes = []
+
+    def get(self, request, jobcard_id):
+        token = _extract_request_token(request)
+        token_user = _authenticate_document_request(request)
+        if not token_user:
+            return HttpResponse(_simple_message_page("Authentication required."),
+                                status=401)
+
+        jobcard = _document_jobcard_queryset().filter(id=jobcard_id).first()
+        if not jobcard:
+            return HttpResponse(_simple_message_page("Job card not found."), status=404)
+
+        if not _user_can_access_jobcard(token_user, jobcard):
+            return HttpResponse(
+                _simple_message_page("You do not have access to this job card."),
+                status=403)
+
+        document_type = _resolve_document_type(jobcard)
+        if document_type == "closed":
+            return HttpResponse(
+                _simple_message_page(
+                    "This job has already been delivered. Invoice and "
+                    "quotation are no longer available."),
+                status=400)
+
+        has_billable_items = jobcard.labour_services.exists() or jobcard.spares.exists()
+        if document_type == "quotation" and not has_billable_items:
+            return HttpResponse(
+                _simple_message_page(
+                    "Add at least one labour or spare item to generate a quotation."),
+                status=400)
+
+        context = _document_context(jobcard, document_type)
+        context["show_whatsapp_button"] = True
+        share_url = request.build_absolute_uri(
+            reverse("jobcard-share-whatsapp", args=[jobcard.id]))
+        if token:
+            share_url += f"?token={token}"
+        context["share_endpoint"] = share_url
+
+        html = render_to_string("jobcard/invoice_quotation_pdf.html", context)
+        return HttpResponse(html)
+
+
 class JobCardDocumentView(APIView):
     authentication_classes = []
     permission_classes = []
@@ -323,16 +389,126 @@ class JobCardDocumentView(APIView):
         return response
 
 
-def _render_document_pdf(html, request):
-    try:
-        from weasyprint import HTML
-    except ImportError:
-        return None
-    else:
-        return HTML(
-            string=html,
-            base_url=request.build_absolute_uri("/"),
-        ).write_pdf()
+class PublicQuotationView(APIView):
+    """
+    GET /jobcard/view/q/<token>/
+
+    Public, unauthenticated page used for the link shared with the
+    customer over WhatsApp. The link is unique per job card and stops
+    resolving the moment the job moves past the quotation stage
+    (i.e. once it becomes an invoice or is delivered).
+    """
+    authentication_classes = []
+    permission_classes = []
+
+    def get(self, request, token):
+        try:
+            jobcard_id = int(signing.Signer(salt=QUOTATION_SHARE_SALT).unsign(token))
+        except Exception:
+            return HttpResponse(_simple_message_page("This link is invalid."), status=404)
+
+        jobcard = _document_jobcard_queryset().filter(id=jobcard_id).first()
+        if not jobcard:
+            return HttpResponse(_simple_message_page("Quotation not found."), status=404)
+
+        document_type = _resolve_document_type(jobcard)
+        if document_type != "quotation":
+            return HttpResponse(
+                _simple_message_page(
+                    "This quotation link is no longer available. Please "
+                    "contact the garage for your invoice."),
+                status=410)
+
+        context = _document_context(jobcard, document_type)
+        html = render_to_string("jobcard/invoice_quotation_pdf.html", context)
+        return HttpResponse(html)
+
+
+class ShareWhatsAppView(APIView):
+    """
+    POST /jobcard/jobcards/<id>/share-whatsapp/?token=<jwt>
+
+    Triggered from the "Share to WhatsApp" button on the view page.
+    Sends the quotation link or the invoice PDF to the customer's
+    WhatsApp number via MSG91.
+    """
+    authentication_classes = []
+    permission_classes = []
+
+    def post(self, request, jobcard_id):
+        token_user = _authenticate_document_request(request)
+        if not token_user:
+            return Response({"message": "Authentication required."},
+                            status=status.HTTP_401_UNAUTHORIZED)
+
+        jobcard = _document_jobcard_queryset().filter(id=jobcard_id).first()
+        if not jobcard:
+            return Response({"message": "Job card not found."},
+                            status=status.HTTP_404_NOT_FOUND)
+        if not _user_can_access_jobcard(token_user, jobcard):
+            return Response({"message": "You do not have access to this job card."},
+                            status=status.HTTP_403_FORBIDDEN)
+
+        vehicle = jobcard.vehicle
+        customer = vehicle.user if vehicle else None
+        if not customer or not customer.mobile:
+            return Response({"message": "Customer mobile number not found."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        garage = jobcard.branch.garage
+        document_type = _resolve_document_type(jobcard)
+
+        try:
+            if document_type == "quotation":
+                if not (jobcard.labour_services.exists() or jobcard.spares.exists()):
+                    return Response(
+                        {"message": "Add at least one labour or spare item first."},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+                token = signing.Signer(salt=QUOTATION_SHARE_SALT).sign(str(jobcard.id))
+                quotation_url = request.build_absolute_uri(
+                    reverse("jobcard-public-quotation", args=[token]))
+
+                whatsapp_response = send_quotation_whatsapp(
+                    mobile=customer.mobile,
+                    customer_name=customer.name,
+                    quotation_url=quotation_url,
+                    garage_name=garage.name,
+                )
+
+            elif document_type == "invoice":
+                context = _document_context(jobcard, document_type)
+                
+                filename = _document_filename(context)
+
+                token = signing.TimestampSigner(salt=INVOICE_SHARE_SALT).sign(
+                    str(jobcard.id))
+                pdf_url = request.build_absolute_uri(
+                    reverse("jobcard-invoice-pdf", args=[token]))
+              
+
+                whatsapp_response = send_invoice_whatsapp(
+                    mobile=customer.mobile,
+                    customer_name=customer.name,
+                    garage_name=garage.name,
+                    pdf_url=pdf_url,
+                    filename=filename,
+                )
+
+            else:
+                return Response({"message": "Document not available for sharing."},
+                                status=status.HTTP_400_BAD_REQUEST)
+        except requests.RequestException as exc:
+            return Response({"message": f"Could not reach WhatsApp service: {exc}"},
+                            status=status.HTTP_502_BAD_GATEWAY)
+
+        if whatsapp_response.status_code >= 300:
+            return Response(
+                {"message": f"WhatsApp API error ({whatsapp_response.status_code}): {whatsapp_response.text}"},
+                status=status.HTTP_502_BAD_GATEWAY)
+
+        return Response({"message": "Shared to customer's WhatsApp successfully."},
+                        status=status.HTTP_200_OK)
 
 
 # ─── Manage Jobs list (for assistant) ─────────────────────────────────────────
@@ -436,19 +612,56 @@ def _set_complaints(jobcard, services):
         jobcard.complaints.set(objs)
 
 
-def _authenticate_document_request(request):
+def _extract_request_token(request):
     auth_header = request.headers.get("Authorization", "")
     token = request.query_params.get("token")
     if auth_header.startswith("Bearer "):
         token = auth_header.split(" ", 1)[1]
+    return token
+
+
+def _authenticate_document_request(request):
+    token = _extract_request_token(request)
     if not token:
         return None
-
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
         return User.objects.filter(id=payload["user_id"]).first()
     except (KeyError, jwt.ExpiredSignatureError, jwt.DecodeError):
         return None
+
+
+def _simple_message_page(message):
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DigiAuto</title>
+<style>
+body {{
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    background-color: #f4f7f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+}}
+.message-box {{
+    background-color: #ffffff;
+    padding: 32px 28px;
+    border-radius: 12px;
+    max-width: 420px;
+    text-align: center;
+    color: #333333;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}}
+</style>
+</head>
+<body>
+<div class="message-box"><p>{message}</p></div>
+</body>
+</html>"""
 
 
 def _document_jobcard_queryset():
@@ -536,6 +749,18 @@ def _document_context(jobcard, document_type):
     }
 
 
+def _render_document_pdf(html, request):
+    try:
+        from weasyprint import HTML
+    except ImportError:
+        return None
+    else:
+        return HTML(
+            string=html,
+            base_url=request.build_absolute_uri("/"),
+        ).write_pdf()
+
+
 def _make_document_number(prefix, date_value, jobcard_id):
     return f"{prefix}-{date_value:%d%m%Y}{jobcard_id}"
 
@@ -547,3 +772,49 @@ def _document_filename(context):
     if not clean_name:
         clean_name = "customer"
     return f"{clean_name}_{context['document_number']}.pdf"
+
+
+class InvoicePdfView(APIView):
+    """
+    GET /jobcard/invoice-pdf/<token>/
+
+    Generates the invoice PDF on the fly and streams it directly in the
+    response — nothing is ever written to disk. The signed token expires
+    after INVOICE_LINK_MAX_AGE seconds, which is enough time for MSG91 to
+    fetch and deliver the document over WhatsApp.
+    """
+    authentication_classes = []
+    permission_classes = []
+
+    def get(self, request, token):
+        try:
+            jobcard_id = int(
+                signing.TimestampSigner(salt=INVOICE_SHARE_SALT)
+                .unsign(token, max_age=INVOICE_LINK_MAX_AGE)
+            )
+        except signing.SignatureExpired:
+            return HttpResponse(_simple_message_page("This link has expired."), status=410)
+        except Exception:
+            return HttpResponse(_simple_message_page("This link is invalid."), status=404)
+
+        jobcard = _document_jobcard_queryset().filter(id=jobcard_id).first()
+        if not jobcard:
+            return HttpResponse(_simple_message_page("Invoice not found."), status=404)
+
+        if _resolve_document_type(jobcard) != "invoice":
+            return HttpResponse(
+                _simple_message_page("Invoice is not available for this job."),
+                status=400)
+
+        context = _document_context(jobcard, "invoice")
+        html = render_to_string("jobcard/invoice_quotation_pdf.html", context)
+        pdf_bytes = _render_document_pdf(html, request)
+        if pdf_bytes is None:
+            return HttpResponse(
+                _simple_message_page("PDF renderer is not installed."),
+                status=500)
+
+        filename = _document_filename(context)
+        response = HttpResponse(pdf_bytes, content_type="application/pdf")
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response

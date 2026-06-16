@@ -285,6 +285,36 @@ th {
     text-align: center;
     line-height: 1.5;
 }
+.no-print { }
+@media print {
+    .no-print { display: none !important; }
+}
+.whatsapp-action {
+    max-width: 700px;
+    margin: 24px auto 0;
+    padding: 18px;
+    text-align: center;
+}
+.whatsapp-btn {
+    background-color: #25D366;
+    color: #ffffff;
+    border: none;
+    padding: 12px 28px;
+    font-size: 14px;
+    font-weight: 700;
+    border-radius: 24px;
+    cursor: pointer;
+}
+.whatsapp-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+.share-status {
+    margin-top: 10px;
+    font-size: 13px;
+}
+.share-status.success { color: #1a8f4c; }
+.share-status.error { color: #cc3333; }
 </style>
 </head>
 
@@ -487,5 +517,43 @@ th {
         </div>
     </div>
 </div>
+
+{% if show_whatsapp_button %}
+<div class="whatsapp-action no-print">
+    <button id="shareWhatsappBtn" class="whatsapp-btn" onclick="shareToWhatsapp()">
+        Share to WhatsApp
+    </button>
+    <p id="shareStatusMsg" class="share-status"></p>
+</div>
+<script>
+function shareToWhatsapp() {
+    var btn = document.getElementById('shareWhatsappBtn');
+    var msg = document.getElementById('shareStatusMsg');
+    btn.disabled = true;
+    btn.textContent = 'Sending...';
+    msg.textContent = '';
+    msg.className = 'share-status';
+    fetch('{{ share_endpoint }}', { method: 'POST' })
+        .then(function (res) {
+            return res.json().then(function (data) {
+                return { ok: res.ok, data: data };
+            });
+        })
+        .then(function (result) {
+            btn.disabled = false;
+            btn.textContent = 'Share to WhatsApp';
+            msg.textContent = (result.data && result.data.message) ||
+                (result.ok ? 'Sent successfully.' : 'Failed to send.');
+            msg.className = 'share-status ' + (result.ok ? 'success' : 'error');
+        })
+        .catch(function () {
+            btn.disabled = false;
+            btn.textContent = 'Share to WhatsApp';
+            msg.textContent = 'Network error. Please try again.';
+            msg.className = 'share-status error';
+        });
+}
+</script>
+{% endif %}
 </body>
 </html>

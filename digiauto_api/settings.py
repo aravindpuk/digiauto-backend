@@ -27,6 +27,8 @@ load_dotenv()
 DEBUG = os.getenv('DEBUG') == 'True'
 SECRET_KEY = os.getenv('SECRET_KEY')
 
+MSG91_AUTH_KEY = os.environ.get("MSG91_AUTH_KEY", "")
+
 ALLOWED_HOSTS = [
     "services.digiauto.co.in",
     "localhost",
