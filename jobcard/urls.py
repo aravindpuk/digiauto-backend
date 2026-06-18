@@ -11,4 +11,5 @@ urlpatterns = [
     path("view/q/<str:token>/", views.PublicQuotationView.as_view(), name="jobcard-public-quotation"),
     path("manage/", views.manage_jobs_list, name="manage-jobs"),
     path("invoice-pdf/<str:token>/", views.InvoicePdfView.as_view(), name="jobcard-invoice-pdf"),
+    path("reports/", views.JobCardReportsView.as_view(), name="jobcard-reports"),
 ]

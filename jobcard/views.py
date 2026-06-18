@@ -26,6 +26,11 @@ from .serializer.jobcard_serializer import (JobCardDetailSerializer,
                                             JobCardListSerializer)
 from .utils.whatsapp import send_invoice_whatsapp, send_quotation_whatsapp
 
+from django.db.models import Count, DecimalField, F, Sum
+from django.db.models.functions import Coalesce
+...
+from .utils.reports import resolve_date_range
+
 # Status progression order
 STATUS_ORDER = ["pending", "active", "completed", "delivered"]
 
@@ -235,6 +240,12 @@ class JobCardDetailView(APIView):
             next_status, _ = JobStatus.objects.get_or_create(
                 name=next_name, defaults={"order": idx + 1})
             jobcard.status = next_status
+            update_fields = ["status"]
+            
+            if next_name == "delivered" and not jobcard.delivered_at:
+                jobcard.delivered_at = timezone.now()
+                update_fields.append("delivered_at")
+            
             jobcard.save(update_fields=["status"])
             return Response(
                 {"message": f"Status updated to {next_name}.",
@@ -509,6 +520,149 @@ class ShareWhatsAppView(APIView):
         return Response({"message": "Shared to customer's WhatsApp successfully."},
                         status=status.HTTP_200_OK)
 
+
+
+# ─── Reports ──────────────────────────────────────────────────────────────────
+
+class JobCardReportsView(APIView):
+    """
+    GET /jobcard/reports/?branch_id=&garage_id=&period=today|week|month|custom&start_date=&end_date=
+
+    Job counts (total/not-delivered) are based on created_at — what came
+    in during the period. Income, spare-wise and labour-wise totals are
+    based on delivered_at — what actually became revenue in the period.
+    Undelivered jobs never contribute to income.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        start_dt, end_dt, period, start_date, end_date = resolve_date_range(request)
+
+        branch_id = request.query_params.get("branch_id")
+        garage_id = request.query_params.get("garage_id")
+
+        base_qs = JobCard.objects.all()
+        if branch_id:
+            base_qs = base_qs.filter(branch_id=branch_id)
+        elif garage_id:
+            base_qs = base_qs.filter(branch__garage_id=garage_id)
+        else:
+            user_branches = request.user.branches.all()
+            if user_branches.exists():
+                base_qs = base_qs.filter(branch__in=user_branches)
+
+        # ── Intake — by created_at ──────────────────────────────────────
+        created_qs = base_qs.filter(created_at__range=(start_dt, end_dt))
+        total_jobs = created_qs.count()
+        status_counts = {
+            row["status__name"].lower(): row["count"]
+            for row in created_qs.values("status__name").annotate(count=Count("id"))
+        }
+        pending_jobs = total_jobs - status_counts.get("delivered", 0)
+
+        # ── Income — by delivered_at ────────────────────────────────────
+        delivered_qs = base_qs.filter(
+            status__name__iexact="delivered",
+            delivered_at__range=(start_dt, end_dt),
+        )
+        delivered_jobs = delivered_qs.count()
+
+        spare_qs = JobCardSpare.objects.filter(jobcard__in=delivered_qs)
+        labour_qs = JobCardLabour.objects.filter(jobcard__in=delivered_qs)
+
+        spare_total = spare_qs.aggregate(
+            total=Coalesce(
+                Sum(F("mrp") * F("quantity"),
+                    output_field=DecimalField(max_digits=12, decimal_places=2)),
+                Decimal("0.00"),
+                output_field=DecimalField(max_digits=12, decimal_places=2),
+            )
+        )["total"]
+
+        labour_total = labour_qs.aggregate(
+            total=Coalesce(
+                Sum("amount", output_field=DecimalField(max_digits=12, decimal_places=2)),
+                Decimal("0.00"),
+                output_field=DecimalField(max_digits=12, decimal_places=2),
+            )
+        )["total"]
+
+        total_income = spare_total + labour_total
+
+        spare_breakdown = list(
+            spare_qs.values("spare__partname")
+            .annotate(
+                quantity=Sum("quantity"),
+                amount=Sum(F("mrp") * F("quantity"),
+                          output_field=DecimalField(max_digits=12, decimal_places=2)),
+            )
+            .order_by("-amount")
+        )
+
+        labour_breakdown = list(
+            labour_qs.values("labour__name")
+            .annotate(count=Count("id"),
+                      amount=Sum("amount", output_field=DecimalField(max_digits=12, decimal_places=2)))
+            .order_by("-amount")
+        )
+
+        delivered_jobs_detail = (
+            delivered_qs.select_related("vehicle__user")
+            .prefetch_related("spares", "labour_services")
+            .order_by("-delivered_at")
+        )
+        delivered_jobs_list = [
+            {
+                "id": jc.id,
+                "job_id": jc.job_id_display(),
+                "vehicle_number": jc.vehicle.vehicle_number if jc.vehicle else "-",
+                "customer_name": jc.vehicle.user.name if jc.vehicle else "-",
+                "delivered_at": jc.delivered_at,
+                "total": str(_job_total(jc)),
+            }
+            for jc in delivered_jobs_detail
+        ]
+
+        return Response({
+            "period": period,
+            "start_date": start_date,
+            "end_date": end_date,
+            "summary": {
+                "total_jobs": total_jobs,
+                "pending_jobs": pending_jobs,
+                "delivered_jobs": delivered_jobs,
+                "income": str(total_income),
+                "spare_income": str(spare_total),
+                "labour_income": str(labour_total),
+            },
+            "status_breakdown": status_counts,
+            "spares": [
+                {
+                    "part_name": row["spare__partname"],
+                    "quantity": row["quantity"],
+                    "amount": str(row["amount"] or 0),
+                }
+                for row in spare_breakdown
+            ],
+            "labour": [
+                {
+                    "labour_name": row["labour__name"],
+                    "count": row["count"],
+                    "amount": str(row["amount"] or 0),
+                }
+                for row in labour_breakdown
+            ],
+            "delivered_jobs_list": delivered_jobs_list,
+        }, status=status.HTTP_200_OK)
+
+def _job_total(jobcard):
+    spare_total = sum(
+        (s.mrp or Decimal("0.00")) * s.quantity for s in jobcard.spares.all()
+    )
+    labour_total = sum(
+        (l.amount or Decimal("0.00")) for l in jobcard.labour_services.all()
+    )
+    return spare_total + labour_total
 
 # ─── Manage Jobs list (for assistant) ─────────────────────────────────────────
 

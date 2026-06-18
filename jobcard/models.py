@@ -49,6 +49,7 @@ class JobCard(models.Model):
     vehicle    = models.ForeignKey(Vehicle, on_delete=models.CASCADE)
     kilometer  = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
+    delivered_at = models.DateTimeField(null=True, blank=True) 
     mechanic   = models.ManyToManyField("user.User",
                                         related_name="job_mechanic", blank=True)
     status     = models.ForeignKey(JobStatus, on_delete=models.CASCADE)
