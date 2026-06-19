@@ -10,6 +10,39 @@ from labour.models import Labour, LabourPrice
 from jobcard.models import JobCard, JobCardLabour, Complaint
 
 
+def _parse_money(value, field):
+    try:
+        amount = Decimal(str(value)).quantize(Decimal("0.01"))
+    except (InvalidOperation, ValueError, TypeError):
+        raise ValueError(f"{field} must be a valid number.")
+    if amount < 0:
+        raise ValueError(f"{field} cannot be negative.")
+    return amount
+
+
+def _upsert_default_price(labour, garage_id, price):
+    if not garage_id:
+        return
+
+    labour_price = LabourPrice.objects.filter(
+        labour=labour,
+        garage_id=garage_id,
+        vehicle_model__isnull=True,
+    ).first()
+
+    if labour_price:
+        labour_price.price = price
+        labour_price.save(update_fields=["price"])
+        return
+
+    LabourPrice.objects.create(
+        labour=labour,
+        garage_id=garage_id,
+        vehicle_model=None,
+        price=price,
+    )
+
+
 # ─── Labour Search ────────────────────────────────────────────────────────────
 
 @api_view(["GET"])
@@ -73,6 +106,84 @@ def _get_suggested_price(labour, garage_id, vehicle_model_id):
     return price.price if price else None
 
 
+# ─── Labour Master ────────────────────────────────────────────────────────────
+
+class LabourMasterView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        name = (request.data.get("name") or "").strip()
+        garage_id = request.data.get("garage_id")
+
+        if not name:
+            return Response({"message": "Labour name is required."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            price = _parse_money(request.data.get("cost"), "cost")
+        except ValueError as exc:
+            return Response({"message": str(exc)},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        labour, created = Labour.objects.get_or_create(
+            name__iexact=name,
+            defaults={"name": name},
+        )
+        _upsert_default_price(labour, garage_id, price)
+
+        return Response(
+            {
+                "message": "Labour created." if created else "Labour updated.",
+                "data": {
+                    "id": labour.id,
+                    "name": labour.name,
+                    "cost": str(price),
+                },
+            },
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )
+
+    def put(self, request, labour_id):
+        labour = Labour.objects.filter(id=labour_id).first()
+        if not labour:
+            return Response({"message": "Labour not found."},
+                            status=status.HTTP_404_NOT_FOUND)
+
+        name = (request.data.get("name") or "").strip()
+        garage_id = request.data.get("garage_id")
+
+        if not name:
+            return Response({"message": "Labour name is required."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            price = _parse_money(request.data.get("cost"), "cost")
+        except ValueError as exc:
+            return Response({"message": str(exc)},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        target_labour = labour
+        if labour.name.strip().lower() != name.lower():
+            target_labour, _ = Labour.objects.get_or_create(
+                name__iexact=name,
+                defaults={"name": name},
+            )
+
+        _upsert_default_price(target_labour, garage_id, price)
+
+        return Response(
+            {
+                "message": "Labour updated.",
+                "data": {
+                    "id": target_labour.id,
+                    "name": target_labour.name,
+                    "cost": str(price),
+                },
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
 # ─── JobCard Labour ───────────────────────────────────────────────────────────
 
 class JobCardLabourView(APIView):
@@ -111,12 +222,9 @@ class JobCardLabourView(APIView):
                             status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            amount_decimal = Decimal(str(amount)).quantize(Decimal("0.01"))
-        except (InvalidOperation, ValueError, TypeError):
-            return Response({"message": "amount must be a valid number."},
-                            status=status.HTTP_400_BAD_REQUEST)
-        if amount_decimal < 0:
-            return Response({"message": "amount cannot be negative."},
+            amount_decimal = _parse_money(amount, "amount")
+        except ValueError as exc:
+            return Response({"message": str(exc)},
                             status=status.HTTP_400_BAD_REQUEST)
 
         # ── Resolve labour ────────────────────────────────────────────────────

@@ -119,6 +119,7 @@ class GarageProfile(APIView):
         garage = branch.garage
         admin_name = request.data.get("admin_name")
         mobile = request.data.get("mobile")
+        current_pin = request.data.get("current_pin")
         pin = request.data.get("pin")
         garage_name = request.data.get("garage_name")
         garage_mobile = request.data.get("garage_mobile")
@@ -149,6 +150,17 @@ class GarageProfile(APIView):
 
         if pin is not None and str(pin).strip():
             pin = str(pin).strip()
+            current_pin = str(current_pin or "").strip()
+            if not current_pin:
+                return Response(
+                    {"message": "Current PIN is required."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            if not user.check_pin(current_pin):
+                return Response(
+                    {"message": "Current PIN is incorrect."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             if len(pin) != 4 or not pin.isdigit():
                 return Response(
                     {"message": "PIN must be exactly 4 digits."},
