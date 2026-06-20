@@ -78,7 +78,8 @@ def search_labour(request):
         result.append({
             "id":              labour.id,
             "name":            labour.name,
-            "suggested_price": str(suggested_price) if suggested_price else None,
+            "suggested_price": str(suggested_price) if suggested_price is not None else None,
+            "cost":            str(suggested_price) if suggested_price is not None else None,
         })
 
     return Response({"labour": result}, status=status.HTTP_200_OK)

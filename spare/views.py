@@ -114,12 +114,14 @@ class CreateSpareAPI(views.APIView):
             'data': SpareSerializer(spare).data,
         }, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 
-# 2. List Spare (only showing items with stock > 0 per branch)
+# 2. List Spare (positive stock by default; edits can request zero quantity too)
 class SpareListAPI(views.APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, branch_id):
-        stocks = SpareStock.objects.filter(branches_id=branch_id, quantity__gt=0).select_related('spare')
+        stocks = SpareStock.objects.filter(branches_id=branch_id).select_related('spare')
+        if request.query_params.get('include_zero') not in ('1', 'true', 'True'):
+            stocks = stocks.filter(quantity__gt=0)
         serializer = SpareStockSerializer(stocks, many=True)
         return Response(serializer.data)
 
@@ -160,13 +162,37 @@ class AddSpareStockAPI(views.APIView):
 class UpdateSpareAPI(views.APIView):
     permission_classes = [IsAuthenticated]
 
+    @transaction.atomic
     def put(self, request, spare_id):
         spare = get_object_or_404(Spare, id=spare_id)
-        serializer = SpareSerializer(spare, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({'message': 'Spare updated', 'data': serializer.data})
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        partname = (request.data.get('partname') or request.data.get('name') or spare.partname).strip()
+        partnumber = (request.data.get('partnumber') if 'partnumber' in request.data else spare.partnumber) or ''
+        partnumber = partnumber.strip()
+
+        if not partname:
+            return Response({'message': 'partname is required.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        has_jobcard_usage = JobCardSpare.objects.filter(spare=spare).exists()
+        details_changed = (
+            spare.partname.strip() != partname
+            or (spare.partnumber or '').strip() != partnumber
+        )
+
+        if has_jobcard_usage and details_changed:
+            updated_spare = Spare.objects.create(partname=partname, partnumber=partnumber)
+            SpareStock.objects.filter(spare=spare).update(spare=updated_spare)
+            SparePurchaseData.objects.filter(spare=spare).update(spare=updated_spare)
+        else:
+            spare.partname = partname
+            spare.partnumber = partnumber
+            spare.save(update_fields=['partname', 'partnumber'])
+            updated_spare = spare
+
+        return Response({
+            'message': 'Spare updated',
+            'data': SpareSerializer(updated_spare).data,
+        })
 
 # 5. Update SpareStock (normal edit – price/quantity correction)
 class UpdateSpareStockAPI(views.APIView):

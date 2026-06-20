@@ -5,9 +5,9 @@ import jwt
 import requests
 from django.conf import settings
 from django.core import signing
-from django.core.files.base import ContentFile
-from django.core.files.storage import default_storage
 from django.db import transaction
+from django.db.models import DecimalField, F, Sum
+from django.db.models.functions import Coalesce
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.urls import reverse
@@ -26,9 +26,6 @@ from .serializer.jobcard_serializer import (JobCardDetailSerializer,
                                             JobCardListSerializer)
 from .utils.whatsapp import send_invoice_whatsapp, send_quotation_whatsapp
 
-from django.db.models import Count, DecimalField, F, Sum,ExpressionWrapper
-from django.db.models.functions import Coalesce
-...
 from .utils.reports import resolve_date_range
 
 # Status progression order
@@ -37,7 +34,7 @@ STATUS_ORDER = ["pending", "active", "completed", "delivered"]
 # Salt used to sign the public, customer-facing quotation link.
 QUOTATION_SHARE_SALT = "jobcard-quotation-view"
 INVOICE_SHARE_SALT = "jobcard-invoice-pdf"
-INVOICE_LINK_MAX_AGE = 60 * 60 * 24 # 24 hours — plenty of time for MSG91 to fetch it
+INVOICE_LINK_MAX_AGE = 60 * 60 * 24  # 24 hours, enough time for MSG91 to fetch it
 
 
 @api_view(["GET"])
@@ -323,26 +320,19 @@ class JobCardViewDocument(APIView):
                 status=403)
 
         document_type = _resolve_document_type(jobcard)
-        if document_type == "closed":
+        unavailable_message = _document_unavailable_message(jobcard, document_type)
+        if unavailable_message:
             return HttpResponse(
-                _simple_message_page(
-                    "This job has already been delivered. Invoice and "
-                    "quotation are no longer available."),
-                status=400)
-
-        has_billable_items = jobcard.labour_services.exists() or jobcard.spares.exists()
-        if document_type == "quotation" and not has_billable_items:
-            return HttpResponse(
-                _simple_message_page(
-                    "Add at least one labour or spare item to generate a quotation."),
+                _simple_message_page(unavailable_message),
                 status=400)
 
         context = _document_context(jobcard, document_type)
         context["show_whatsapp_button"] = True
-        share_url = settings.PUBLIC_SITE_URL + reverse("jobcard-share-whatsapp", args=[jobcard.id])
-        if token:
-            share_url += f"?token={token}"
-        context["share_endpoint"] = share_url
+        context["share_endpoint"] = _public_url(
+            "jobcard-share-whatsapp",
+            jobcard.id,
+            token=token,
+        )
 
         html = render_to_string("jobcard/invoice_quotation_pdf.html", context)
         return HttpResponse(html)
@@ -368,19 +358,10 @@ class JobCardDocumentView(APIView):
                             status=status.HTTP_403_FORBIDDEN)
 
         document_type = _resolve_document_type(jobcard)
-        if document_type == "closed":
+        unavailable_message = _document_unavailable_message(jobcard, document_type)
+        if unavailable_message:
             return Response(
-                {"message": "Invoice or quotation is not available after delivery."},
-                status=status.HTTP_400_BAD_REQUEST)
-
-        has_billable_items = jobcard.labour_services.exists() or jobcard.spares.exists()
-        if document_type == "quotation" and not has_billable_items:
-            return Response(
-                {"message": "Quotation is available only after adding at least one labour or spare item."},
-                status=status.HTTP_400_BAD_REQUEST)
-        if document_type == "invoice" and jobcard.status.name.lower() != "completed":
-            return Response(
-                {"message": "Invoice is available only after the job is completed."},
+                {"message": unavailable_message},
                 status=status.HTTP_400_BAD_REQUEST)
 
         context = _document_context(jobcard, document_type)
@@ -467,19 +448,19 @@ class ShareWhatsAppView(APIView):
 
         garage = jobcard.branch.garage
         document_type = _resolve_document_type(jobcard)
+        unavailable_message = _document_unavailable_message(jobcard, document_type)
+        if unavailable_message:
+            return Response(
+                {"message": unavailable_message},
+                status=status.HTTP_400_BAD_REQUEST)
 
         try:
             if document_type == "quotation":
-                if not (jobcard.labour_services.exists() or jobcard.spares.exists()):
-                    return Response(
-                        {"message": "Add at least one labour or spare item first."},
-                        status=status.HTTP_400_BAD_REQUEST)
+                token = signing.Signer(salt=QUOTATION_SHARE_SALT).sign(
+                    str(jobcard.id)
+                )
+                quotation_url = _public_url("jobcard-public-quotation", token)
 
-                token = signing.Signer(salt=QUOTATION_SHARE_SALT).sign(str(jobcard.id))
-                # quotation_url = request.build_absolute_uri(
-                #     reverse("jobcard-public-quotation", args=[token]))
-                quotation_url = settings.PUBLIC_SITE_URL + reverse("jobcard-public-quotation", args=[token])
-        
                 whatsapp_response = send_quotation_whatsapp(
                     mobile=customer.mobile,
                     customer_name=customer.name,
@@ -489,13 +470,11 @@ class ShareWhatsAppView(APIView):
 
             elif document_type == "invoice":
                 context = _document_context(jobcard, document_type)
-                
                 filename = _document_filename(context)
 
                 token = signing.TimestampSigner(salt=INVOICE_SHARE_SALT).sign(
                     str(jobcard.id))
-                pdf_url = settings.PUBLIC_SITE_URL + reverse("jobcard-invoice-pdf", args=[token])
-              
+                pdf_url = _public_url("jobcard-invoice-pdf", token)
 
                 whatsapp_response = send_invoice_whatsapp(
                     mobile=customer.mobile,
@@ -514,7 +493,12 @@ class ShareWhatsAppView(APIView):
 
         if whatsapp_response.status_code >= 300:
             return Response(
-                {"message": f"WhatsApp API error ({whatsapp_response.status_code}): {whatsapp_response.text}"},
+                {
+                    "message": (
+                        f"WhatsApp API error ({whatsapp_response.status_code}): "
+                        f"{whatsapp_response.text}"
+                    )
+                },
                 status=status.HTTP_502_BAD_GATEWAY)
 
         return Response({"message": "Shared to customer's WhatsApp successfully."},
@@ -808,6 +792,25 @@ def _resolve_document_type(jobcard):
     elif status_name == "completed":
         requested = "invoice"
     return requested or "quotation"
+
+
+def _document_unavailable_message(jobcard, document_type):
+    if document_type == "closed":
+        return "Invoice or quotation is not available after delivery."
+    if document_type == "quotation":
+        has_billable_items = (
+            jobcard.labour_services.exists() or jobcard.spares.exists()
+        )
+        if not has_billable_items:
+            return "Add at least one labour or spare item first."
+    return None
+
+
+def _public_url(route_name, *args, token=None):
+    url = settings.PUBLIC_SITE_URL + reverse(route_name, args=args)
+    if token:
+        url += f"?token={token}"
+    return url
 
 
 def _document_context(jobcard, document_type):
