@@ -243,7 +243,7 @@ class JobCardDetailView(APIView):
                 jobcard.delivered_at = timezone.now()
                 update_fields.append("delivered_at")
             
-            jobcard.save(update_fields=["status"])
+            jobcard.save(update_fields=update_fields)
             return Response(
                 {"message": f"Status updated to {next_name}.",
                  "new_status": next_name},

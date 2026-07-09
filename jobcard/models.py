@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 
 
 class Complaint(models.Model):
@@ -56,6 +57,18 @@ class JobCard(models.Model):
 
     def job_id_display(self):
         return f"DIGI-J{str(self.id).zfill(2)}"
+
+    def save(self, *args, **kwargs):
+        if (
+            self.status_id
+            and not self.delivered_at
+            and self.status.name.lower() == "delivered"
+        ):
+            self.delivered_at = timezone.now()
+            update_fields = kwargs.get("update_fields")
+            if update_fields is not None:
+                kwargs["update_fields"] = set(update_fields) | {"delivered_at"}
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.job_id_display()
