@@ -554,7 +554,7 @@ class JobCardReportsView(APIView):
 
         spare_total = spare_qs.aggregate(
             total=Coalesce(
-                Sum(F("mrp") * F("quantity"),
+                Sum("amount",
                     output_field=DecimalField(max_digits=12, decimal_places=2)),
                 Decimal("0.00"),
                 output_field=DecimalField(max_digits=12, decimal_places=2),
@@ -610,7 +610,7 @@ class JobCardReportsView(APIView):
 
 def _job_amounts(jobcard):
     spare_total = sum(
-        (s.mrp or Decimal("0.00")) * s.quantity for s in jobcard.spares.all()
+        (s.amount or Decimal("0.00")) for s in jobcard.spares.all()
     )
     labour_total = sum(
         (l.amount or Decimal("0.00")) for l in jobcard.labour_services.all()
@@ -817,7 +817,7 @@ def _document_context(jobcard, document_type):
     labour_services = list(jobcard.labour_services.select_related("labour").all())
     jobcard_spares = list(jobcard.spares.select_related("spare").all())
     labour_total = sum((item.amount or Decimal("0.00")) for item in labour_services)
-    spare_total = sum((item.mrp or Decimal("0.00")) * item.quantity
+    spare_total = sum((item.amount or Decimal("0.00"))
                       for item in jobcard_spares)
     grand_total = labour_total + spare_total
     now = timezone.localtime(timezone.now())
@@ -864,7 +864,7 @@ def _document_context(jobcard, document_type):
                 "partname": item.spare.partname,
                 "quantity": item.quantity,
                 "mrp": item.mrp or Decimal("0.00"),
-                "amount": (item.mrp or Decimal("0.00")) * item.quantity,
+                "amount": item.amount or Decimal("0.00"),
             }
             for item in jobcard_spares
         ],

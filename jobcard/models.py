@@ -75,11 +75,24 @@ class JobCard(models.Model):
 
 
 class JobCardSpare(models.Model):
+    PRICE_MODE_UNIT = "unit"
+    PRICE_MODE_TOTAL = "total"
+    PRICE_MODE_CHOICES = [
+        (PRICE_MODE_UNIT, "Per unit"),
+        (PRICE_MODE_TOTAL, "Line total"),
+    ]
+
     jobcard    = models.ForeignKey(JobCard, on_delete=models.CASCADE,
                                    related_name="spares")
     spare      = models.ForeignKey("spare.Spare", on_delete=models.CASCADE)
     quantity   = models.IntegerField()
     mrp        = models.DecimalField(max_digits=10, decimal_places=2)
+    # ``amount`` is the authoritative line total.  Keeping it separately lets
+    # fluids and consumables be billed as one total even when their quantity
+    # is not a useful unit price.
+    amount     = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    price_mode = models.CharField(max_length=5, choices=PRICE_MODE_CHOICES,
+                                  default=PRICE_MODE_UNIT)
     complaints = models.ManyToManyField(Complaint, related_name="spares",
                                         blank=True)
     def __str__(self): return f"{self.spare.partname} x{self.quantity}"

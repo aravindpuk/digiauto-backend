@@ -325,7 +325,7 @@ def _jobcard_total(jobcard):
     if not jobcard:
         return Decimal("0.00")
     spare_total = sum(
-        (spare.mrp or Decimal("0.00")) * spare.quantity
+        spare.amount or Decimal("0.00")
         for spare in jobcard.spares.all()
     )
     labour_total = sum(

@@ -67,6 +67,7 @@ class JobCardReportDeliveryDateTests(TestCase):
             spare=spare,
             quantity=2,
             mrp=Decimal("100.00"),
+            amount=Decimal("200.00"),
         )
         labour = Labour.objects.create(name="Service")
         JobCardLabour.objects.create(

@@ -161,7 +161,8 @@ class JobCardDetailSerializer(serializers.ModelSerializer):
                 "part_name": s.spare.partname,
                 "quantity":  s.quantity,
                 "mrp":       str(s.mrp),
-                "amount":    str(s.mrp * s.quantity),
+                "amount":    str(s.amount),
+                "price_mode": s.price_mode,
                 "services":  [{"id": c.id, "text": c.text} for c in s.complaints.all()],
             }
             for s in obj.spares.select_related("spare").all()
@@ -186,7 +187,7 @@ class JobCardDetailSerializer(serializers.ModelSerializer):
 
 def _jobcard_total(obj):
     spare_total = sum(
-        (spare.mrp or Decimal("0.00")) * spare.quantity
+        spare.amount or Decimal("0.00")
         for spare in obj.spares.all()
     )
     labour_total = sum(

@@ -57,7 +57,7 @@ def _jobcard_total(jobcard):
     if not jobcard:
         return Decimal("0.00")
     spare_total = sum(
-        (spare.mrp or Decimal("0.00")) * spare.quantity
+        spare.amount or Decimal("0.00")
         for spare in jobcard.spares.all()
     )
     labour_total = sum(
@@ -247,9 +247,14 @@ class JobCardSpareView(views.APIView):
 
         try:
             quantity = _parse_quantity(request.data.get("quantity"))
-            mrp = _parse_money(request.data.get("mrp"), "mrp")
+            price = _parse_money(request.data.get("mrp"), "price")
         except ValueError as exc:
             return Response({"message": str(exc)},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        price_mode = request.data.get("price_mode", JobCardSpare.PRICE_MODE_UNIT)
+        if price_mode not in dict(JobCardSpare.PRICE_MODE_CHOICES):
+            return Response({"message": "price_mode must be 'unit' or 'total'."},
                             status=status.HTTP_400_BAD_REQUEST)
 
         is_new = False
@@ -273,11 +278,17 @@ class JobCardSpareView(views.APIView):
         if complaint_id:
             complaint = Complaint.objects.filter(id=complaint_id).first()
 
+        # Preserve a unit rate for reports/invoices, but never use a rounded
+        # derived rate to calculate a total-price line.
+        total_amount = price * quantity if price_mode == JobCardSpare.PRICE_MODE_UNIT else price
+        unit_mrp = price if price_mode == JobCardSpare.PRICE_MODE_UNIT else price / quantity
         job_spare = JobCardSpare.objects.create(
             jobcard=jobcard,
             spare=spare,
             quantity=quantity,
-            mrp=mrp,
+            mrp=unit_mrp,
+            amount=total_amount,
+            price_mode=price_mode,
         )
         if complaint:
             job_spare.complaints.add(complaint)
@@ -291,7 +302,8 @@ class JobCardSpareView(views.APIView):
                 "partnumber": spare.partnumber,
                 "quantity": job_spare.quantity,
                 "mrp": str(job_spare.mrp),
-                "amount": str(job_spare.mrp * job_spare.quantity),
+                "amount": str(job_spare.amount),
+                "price_mode": job_spare.price_mode,
                 "services": (
                     [{"id": complaint.id, "text": complaint.text}]
                     if complaint else []
