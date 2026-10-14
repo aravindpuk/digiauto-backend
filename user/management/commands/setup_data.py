@@ -25,7 +25,14 @@ class Command(BaseCommand):
                 old_role.delete()
 
         # ✅ Create Roles
-        roles = ["garage-admin", "garage-staff", "customer", "digi-staff", "digiadmin"]
+        roles = [
+            "customer",
+            "garage-admin",
+            "garage-staff",
+            "digi-admin",
+            "digi-staff",
+            "scrap-team",
+        ]
         for role in roles:
             UserRole.objects.get_or_create(name=role)
 

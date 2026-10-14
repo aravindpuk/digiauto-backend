@@ -5,6 +5,9 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
     dependencies = [
         ("jobcard", "0007_jobcardspare_amount_price_mode"),
+        # Labour must move its FK before the historical jobcard vehicle
+        # catalog models are removed from migration state.
+        ("labour", "0003_move_vehicle_model_to_vehicle_app"),
         ("vehicle", "0001_initial"),
     ]
 

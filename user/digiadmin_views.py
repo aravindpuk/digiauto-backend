@@ -17,7 +17,7 @@ def _current_admin(request):
     if not user_id:
         return None
     return User.objects.filter(
-        pk=user_id, is_active=True, role__name="digiadmin"
+        pk=user_id, is_active=True, role__name="digi-admin"
     ).first()
 
 
@@ -44,7 +44,7 @@ def login_view(request):
         mobile = request.POST.get("mobile", "").strip()
         password = request.POST.get("password", "")
         admin_user = User.objects.filter(
-            mobile=mobile, is_active=True, role__name="digiadmin"
+            mobile=mobile, is_active=True, role__name="digi-admin"
         ).first()
         if admin_user and admin_user.check_password(password):
             request.session.cycle_key()
