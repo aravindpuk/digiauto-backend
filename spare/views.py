@@ -7,8 +7,151 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
-from .models import Spare, SpareStock, SparePurchaseData
+from .models import (
+    Spare,
+    SpareStock,
+    SparePurchaseData,
+    UsedSpareRequest,
+    UsedSpareRequestImage,
+    SpareShop,
+    SpareShopInventory,
+    SpareShopInventoryImage,
+    SpareShopOrder,
+)
 from jobcard.models import Complaint, JobCard, JobCardSpare
+
+
+class RegisterSpareShop(views.APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        role = getattr(request.user, "role", None)
+        if not role or role.name != "scrap-team":
+            return Response(
+                {"message": "Spare shop account required."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        name = str(request.data.get("name", "")).strip()
+        location = str(request.data.get("location", "")).strip()
+        try:
+            latitude = float(request.data.get("latitude"))
+            longitude = float(request.data.get("longitude"))
+        except (TypeError, ValueError):
+            return Response(
+                {"message": "Choose a valid shop location."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not name or not location:
+            return Response(
+                {"message": "Shop name and location are required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if SpareShop.objects.filter(owner=request.user).exists():
+            return Response(
+                {"message": "A spare shop is already registered for this account."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        shop = SpareShop.objects.create(
+            owner=request.user,
+            name=name,
+            location=location,
+            latitude=latitude,
+            longitude=longitude,
+        )
+        return Response(
+            {"message": "Spare shop registered successfully.", "shop_id": shop.id},
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class UsedSpareRequestsAPI(views.APIView):
+    permission_classes = [IsAuthenticated]
+
+    def _allowed_requester(self, request):
+        role = getattr(request.user, "role", None)
+        return bool(role and role.name in {"customer", "garage-admin"})
+
+    def get(self, request):
+        if not self._allowed_requester(request):
+            return Response({"message": "Customer or garage account required."},
+                            status=status.HTTP_403_FORBIDDEN)
+        requests = UsedSpareRequest.objects.filter(customer=request.user)
+        return Response({"orders": [self._data(item) for item in requests]},
+                        status=status.HTTP_200_OK)
+
+    def post(self, request):
+        if not self._allowed_requester(request):
+            return Response({"message": "Customer or garage account required."},
+                            status=status.HTTP_403_FORBIDDEN)
+
+        make = (request.data.get("vehicle_make") or "").strip()
+        model = (request.data.get("vehicle_model") or "").strip()
+        year = (request.data.get("vehicle_year") or "").strip()
+        spare_name = (request.data.get("spare_name") or "").strip()
+        images = request.FILES.getlist("images") or request.FILES.getlist("image")
+        if len(images) > 6:
+            return Response({"message": "Upload up to 6 photos per request."},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if not make or not model:
+            return Response({"message": "Select the vehicle make and model."},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if year and (len(year) != 4 or not year.isdigit()):
+            return Response({"message": "Enter a valid 4-digit year or leave it empty."},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if not spare_name and not images:
+            return Response({"message": "Add a spare name or at least one photo."},
+                            status=status.HTTP_400_BAD_REQUEST)
+        for image in images:
+            if image.size > 5 * 1024 * 1024:
+                return Response({"message": "Each photo must be 5 MB or smaller."},
+                                status=status.HTTP_400_BAD_REQUEST)
+            try:
+                serializers.ImageField().run_validation(image)
+            except serializers.ValidationError:
+                return Response({"message": "Upload valid image files."},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+        item = UsedSpareRequest.objects.create(
+            customer=request.user,
+            vehicle_make=make,
+            vehicle_model=model,
+            vehicle_year=year,
+            spare_name=spare_name,
+        )
+        for image in images:
+            UsedSpareRequestImage.objects.create(request=item, image=image)
+        _notify_digiauto_team(item)
+        return Response({"message": "Your used spare request was submitted.",
+                          "order": self._data(item)},
+                         status=status.HTTP_201_CREATED)
+
+    @staticmethod
+    def _data(item):
+        return {
+            "id": item.id,
+            "vehicle_make": item.vehicle_make,
+            "vehicle_model": item.vehicle_model,
+            "vehicle_year": item.vehicle_year,
+            "spare_name": item.spare_name,
+            "images": [photo.image.url for photo in item.photos.all()],
+            "image_url": item.image.url if item.image else "",
+            "has_image": bool(item.image or item.photos.exists()),
+            "status": item.status,
+            "created_at": item.created_at.isoformat(),
+        }
+
+
+def _notify_digiauto_team(item):
+    """Send a topic notification when Firebase Admin credentials are configured."""
+    from .notifications import send_topic_notification
+    send_topic_notification(
+        topic="digi-staff-spare-orders",
+        title="New used spare request",
+        body=f"{item.vehicle_make} {item.vehicle_model}: {item.spare_name or 'Photo attached'}",
+        data={"request_id": item.id, "type": "used_spare_order"},
+    )
 
 # ------------------------- SERIALIZERS ----------------------------
 class SpareSerializer(serializers.ModelSerializer):

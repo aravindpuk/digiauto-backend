@@ -1,7 +1,4 @@
 
-from os import name
-
-from django.forms import SlugField
 from rest_framework import serializers
 
 from user.models import User,UserRole
@@ -15,6 +12,7 @@ class UserRoleSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     
     role = serializers.SlugRelatedField(queryset=UserRole.objects.all(),slug_field='name')
+    pin = serializers.CharField(write_only=True, min_length=4, max_length=4)
 
     class Meta:
         model = User

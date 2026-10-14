@@ -20,6 +20,13 @@ class RegisterUser(APIView):
     """
     def post(self, request):
         try:
+            role_name = request.data.get("role")
+            if role_name not in {"customer", "garage-admin", "scrap-team"}:
+                return Response(
+                    {"message": "Choose customer, garage, or spare shop during registration."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            UserRole.objects.get_or_create(name=role_name)
             serializer = UserSerializer(data=request.data)
             if serializer.is_valid(raise_exception=True):
                 serializer.save()
@@ -96,6 +103,10 @@ def login(request):
     branch  = user.branches.select_related("garage").first()
     garage_id = branch.garage.id if branch else None
     branch_id = branch.id       if branch else None
+    spare_shop_id = None
+    if user.role and user.role.name == "scrap-team":
+        from spare.models import SpareShop
+        spare_shop_id = SpareShop.objects.filter(owner=user).values_list("id", flat=True).first()
 
     return Response(
         {
@@ -103,6 +114,8 @@ def login(request):
             "token":     token,
             "garage_id": garage_id,
             "branch_id": branch_id,
+            "spare_shop_id": spare_shop_id,
+            "role": user.role.name if user.role else None,
         },
         status=status.HTTP_200_OK,
     )

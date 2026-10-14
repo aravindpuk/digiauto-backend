@@ -1,0 +1,322 @@
+make,model,vehicle_type
+Maruti Suzuki,Alto 800,passenger_car
+Maruti Suzuki,Alto K10,passenger_car
+Maruti Suzuki,S-Presso,passenger_car
+Maruti Suzuki,Celerio,passenger_car
+Maruti Suzuki,Wagon R,passenger_car
+Maruti Suzuki,Swift,passenger_car
+Maruti Suzuki,Dzire,passenger_car
+Maruti Suzuki,Baleno,passenger_car
+Maruti Suzuki,Ignis,passenger_car
+Maruti Suzuki,Fronx,passenger_car
+Maruti Suzuki,Brezza,passenger_car
+Maruti Suzuki,Ertiga,passenger_car
+Maruti Suzuki,XL6,passenger_car
+Maruti Suzuki,Grand Vitara,passenger_car
+Maruti Suzuki,Jimny,passenger_car
+Maruti Suzuki,Ciaz,passenger_car
+Maruti Suzuki,Eeco,passenger_car
+Maruti Suzuki,Invicto,passenger_car
+Maruti Suzuki,S-Cross,passenger_car
+Maruti Suzuki,Vitara Brezza,passenger_car
+Hyundai,Santro,passenger_car
+Hyundai,Grand i10,passenger_car
+Hyundai,Grand i10 Nios,passenger_car
+Hyundai,i10,passenger_car
+Hyundai,i20,passenger_car
+Hyundai,i20 Active,passenger_car
+Hyundai,Aura,passenger_car
+Hyundai,Xcent,passenger_car
+Hyundai,Verna,passenger_car
+Hyundai,Venue,passenger_car
+Hyundai,Venue N Line,passenger_car
+Hyundai,Creta,passenger_car
+Hyundai,Creta N Line,passenger_car
+Hyundai,Alcazar,passenger_car
+Hyundai,Tucson,passenger_car
+Hyundai,Kona Electric,passenger_car
+Hyundai,Ioniq 5,passenger_car
+Hyundai,Exter,passenger_car
+Hyundai,Bayon,passenger_car
+Tata,Tiago,passenger_car
+Tata,Tiago NRG,passenger_car
+Tata,Tigor,passenger_car
+Tata,Altroz,passenger_car
+Tata,Altroz Racer,passenger_car
+Tata,Punch,passenger_car
+Tata,Nexon,passenger_car
+Tata,Nexon EV,passenger_car
+Tata,Curvv,passenger_car
+Tata,Curvv EV,passenger_car
+Tata,Harrier,passenger_car
+Tata,Harrier EV,passenger_car
+Tata,Safari,passenger_car
+Tata,Safari EV,passenger_car
+Tata,Nexon Prime,passenger_car
+Tata,Hexa,passenger_car
+Tata,Zest,passenger_car
+Tata,Bolt,passenger_car
+Tata,Indica,passenger_car
+Tata,Indigo,passenger_car
+Tata,Nano,passenger_car
+Tata,Aria,passenger_car
+Mahindra,KUV100,passenger_car
+Mahindra,KUV100 NXT,passenger_car
+Mahindra,XUV300,passenger_car
+Mahindra,XUV 3XO,passenger_car
+Mahindra,XUV400,passenger_car
+Mahindra,XUV500,passenger_car
+Mahindra,XUV700,passenger_car
+Mahindra,Thar,passenger_car
+Mahindra,Thar Roxx,passenger_car
+Mahindra,Scorpio,passenger_car
+Mahindra,Scorpio Classic,passenger_car
+Mahindra,Scorpio N,passenger_car
+Mahindra,Bolero,passenger_car
+Mahindra,Bolero Neo,passenger_car
+Mahindra,Marazzo,passenger_car
+Mahindra,TUV300,passenger_car
+Mahindra,TUV300 Plus,passenger_car
+Mahindra,Xylo,passenger_car
+Mahindra,Quanto,passenger_car
+Mahindra,Verito,passenger_car
+Mahindra,Alturas G4,passenger_car
+Mahindra,e2o,passenger_car
+Honda,Brio,passenger_car
+Honda,Jazz,passenger_car
+Honda,Amaze,passenger_car
+Honda,City,passenger_car
+Honda,City Hybrid,passenger_car
+Honda,WR-V,passenger_car
+Honda,BR-V,passenger_car
+Honda,Mobilio,passenger_car
+Honda,Civic,passenger_car
+Honda,Accord,passenger_car
+Honda,CR-V,passenger_car
+Honda,Elevate,passenger_car
+Toyota,Etios,passenger_car
+Toyota,Etios Liva,passenger_car
+Toyota,Etios Cross,passenger_car
+Toyota,Yaris,passenger_car
+Toyota,Glanza,passenger_car
+Toyota,Urban Cruiser,passenger_car
+Toyota,Urban Cruiser Hyryder,passenger_car
+Toyota,Rumion,passenger_car
+Toyota,Innova,passenger_car
+Toyota,Innova Crysta,passenger_car
+Toyota,Innova Hycross,passenger_car
+Toyota,Fortuner,passenger_car
+Toyota,Hilux,passenger_car
+Toyota,Camry,passenger_car
+Toyota,Corolla Altis,passenger_car
+Toyota,Corolla,passenger_car
+Toyota,Vellfire,passenger_car
+Toyota,Land Cruiser,passenger_car
+Toyota,Land Cruiser Prado,passenger_car
+Toyota,C-HR,passenger_car
+Kia,Sonet,passenger_car
+Kia,Seltos,passenger_car
+Kia,Carens,passenger_car
+Kia,Carnival,passenger_car
+Kia,EV6,passenger_car
+Kia,EV9,passenger_car
+Renault,Kwid,passenger_car
+Renault,Triber,passenger_car
+Renault,Kiger,passenger_car
+Renault,Duster,passenger_car
+Renault,Captur,passenger_car
+Renault,Lodgy,passenger_car
+Renault,Fluence,passenger_car
+Renault,Scala,passenger_car
+Renault,Pulse,passenger_car
+Nissan,Magnite,passenger_car
+Nissan,Kicks,passenger_car
+Nissan,Terrano,passenger_car
+Nissan,Sunny,passenger_car
+Nissan,Micra,passenger_car
+Nissan,Evalia,passenger_car
+Nissan,X-Trail,passenger_car
+Volkswagen,Polo,passenger_car
+Volkswagen,Vento,passenger_car
+Volkswagen,Ameo,passenger_car
+Volkswagen,Taigun,passenger_car
+Volkswagen,Virtus,passenger_car
+Volkswagen,T-Roc,passenger_car
+Volkswagen,Tiguan,passenger_car
+Volkswagen,Tiguan AllSpace,passenger_car
+Volkswagen,Beetle,passenger_car
+Skoda,Fabia,passenger_car
+Skoda,Rapid,passenger_car
+Skoda,Laura,passenger_car
+Skoda,Octavia,passenger_car
+Skoda,Superb,passenger_car
+Skoda,Kushaq,passenger_car
+Skoda,Slavia,passenger_car
+Skoda,Kodiaq,passenger_car
+Skoda,Yeti,passenger_car
+Skoda,Karoq,passenger_car
+Skoda,Enyaq,passenger_car
+MG,Hector,passenger_car
+MG,Hector Plus,passenger_car
+MG,Astor,passenger_car
+MG,Gloster,passenger_car
+MG,ZS EV,passenger_car
+MG,Comet EV,passenger_car
+MG,Windsor EV,passenger_car
+Jeep,Compass,passenger_car
+Jeep,Meridian,passenger_car
+Jeep,Renegade,passenger_car
+Jeep,Wrangler,passenger_car
+Jeep,Grand Cherokee,passenger_car
+Jeep,Grand Cherokee L,passenger_car
+Citroen,C3,passenger_car
+Citroen,C3 Aircross,passenger_car
+Citroen,C5 Aircross,passenger_car
+Citroen,C3 EV,passenger_car
+Citroen,eC3,passenger_car
+Citroen,Basalt,passenger_car
+Force Motors,Gurkha,passenger_car
+Force Motors,Gurkha 5 Door,passenger_car
+Force Motors,Trax Cruiser,passenger_car
+Force Motors,Urbania,passenger_car
+Isuzu,D-Max,passenger_car
+Isuzu,V-Cross,passenger_car
+Isuzu,MU-X,passenger_car
+Fiat,Punto,passenger_car
+Fiat,Grande Punto,passenger_car
+Fiat,Linea,passenger_car
+Fiat,Avventura,passenger_car
+Fiat,Abarth Punto,passenger_car
+Fiat,Urban Cross,passenger_car
+Mitsubishi,Lancer,passenger_car
+Mitsubishi,Cedia,passenger_car
+Mitsubishi,Pajero,passenger_car
+Mitsubishi,Pajero Sport,passenger_car
+Mitsubishi,Outlander,passenger_car
+Mitsubishi,Montero,passenger_car
+Ford,Figo,passenger_car
+Ford,Aspire,passenger_car
+Ford,Freestyle,passenger_car
+Ford,Fiesta,passenger_car
+Ford,Ikon,passenger_car
+Ford,Classic,passenger_car
+Ford,EcoSport,passenger_car
+Ford,Endeavour,passenger_car
+Ford,Mustang,passenger_car
+Chevrolet,Spark,passenger_car
+Chevrolet,Beat,passenger_car
+Chevrolet,Sail,passenger_car
+Chevrolet,Sail U-VA,passenger_car
+Chevrolet,Cruze,passenger_car
+Chevrolet,Optra,passenger_car
+Chevrolet,Aveo,passenger_car
+Chevrolet,Aveo U-VA,passenger_car
+Chevrolet,Tavera,passenger_car
+Chevrolet,Enjoy,passenger_car
+Chevrolet,Captiva,passenger_car
+Datsun,GO,passenger_car
+Datsun,GO+,passenger_car
+Datsun,redi-GO,passenger_car
+Daewoo,Matiz,passenger_car
+Daewoo,Cielo,passenger_car
+Daewoo,Nubira,passenger_car
+Volkswagen / Skoda (older shared),Fabia,passenger_car
+Volkswagen / Skoda (older shared),Laura,passenger_car
+Volkswagen / Skoda (older shared),Rapid,passenger_car
+BMW,2 Series,passenger_car
+BMW,3 Series,passenger_car
+BMW,5 Series,passenger_car
+BMW,7 Series,passenger_car
+BMW,X1,passenger_car
+BMW,X3,passenger_car
+BMW,X4,passenger_car
+BMW,X5,passenger_car
+BMW,X6,passenger_car
+BMW,X7,passenger_car
+BMW,i4,passenger_car
+BMW,i5,passenger_car
+BMW,i7,passenger_car
+BMW,iX,passenger_car
+BMW,iX1,passenger_car
+BMW,Z4,passenger_car
+Mercedes-Benz,A-Class,passenger_car
+Mercedes-Benz,B-Class,passenger_car
+Mercedes-Benz,C-Class,passenger_car
+Mercedes-Benz,E-Class,passenger_car
+Mercedes-Benz,S-Class,passenger_car
+Mercedes-Benz,CLA,passenger_car
+Mercedes-Benz,CLS,passenger_car
+Mercedes-Benz,GLA,passenger_car
+Mercedes-Benz,GLB,passenger_car
+Mercedes-Benz,GLC,passenger_car
+Mercedes-Benz,GLE,passenger_car
+Mercedes-Benz,GLS,passenger_car
+Mercedes-Benz,G-Class,passenger_car
+Mercedes-Benz,EQA,passenger_car
+Mercedes-Benz,EQB,passenger_car
+Mercedes-Benz,EQE,passenger_car
+Mercedes-Benz,EQS,passenger_car
+Mercedes-Benz,Maybach S-Class,passenger_car
+Mercedes-Benz,Maybach GLS,passenger_car
+Audi,A3,passenger_car
+Audi,A4,passenger_car
+Audi,A6,passenger_car
+Audi,A8,passenger_car
+Audi,Q2,passenger_car
+Audi,Q3,passenger_car
+Audi,Q5,passenger_car
+Audi,Q7,passenger_car
+Audi,Q8,passenger_car
+Audi,e-tron,passenger_car
+Audi,Q8 e-tron,passenger_car
+Audi,e-tron GT,passenger_car
+Audi,Q4 e-tron,passenger_car
+Volvo,S60,passenger_car
+Volvo,S90,passenger_car
+Volvo,XC40,passenger_car
+Volvo,XC40 Recharge,passenger_car
+Volvo,XC60,passenger_car
+Volvo,XC90,passenger_car
+Volvo,C40 Recharge,passenger_car
+Volvo,EX30,passenger_car
+Volvo,EX40,passenger_car
+Volvo,EX90,passenger_car
+Volvo,ES90,passenger_car
+Jaguar,XE,passenger_car
+Jaguar,XF,passenger_car
+Jaguar,XJ,passenger_car
+Jaguar,F-Pace,passenger_car
+Jaguar,F-Type,passenger_car
+Jaguar,I-Pace,passenger_car
+Land Rover,Defender,passenger_car
+Land Rover,Discovery,passenger_car
+Land Rover,Discovery Sport,passenger_car
+Land Rover,Range Rover Evoque,passenger_car
+Land Rover,Range Rover Velar,passenger_car
+Land Rover,Range Rover Sport,passenger_car
+Land Rover,Range Rover,passenger_car
+Land Rover,Freelander,passenger_car
+Porsche,718 Cayman,passenger_car
+Porsche,718 Boxster,passenger_car
+Porsche,911,passenger_car
+Porsche,Taycan,passenger_car
+Porsche,Macan,passenger_car
+Porsche,Cayenne,passenger_car
+Porsche,Panamera,passenger_car
+Lexus,ES,passenger_car
+Lexus,LS,passenger_car
+Lexus,NX,passenger_car
+Lexus,RX,passenger_car
+Lexus,LX,passenger_car
+Lexus,LM,passenger_car
+Lexus,LC,passenger_car
+Mini,Cooper,passenger_car
+Mini,Cooper S,passenger_car
+Mini,Countryman,passenger_car
+Mini,Clubman,passenger_car
+Mini,Convertible,passenger_car
+BYD,Atto 3,passenger_car
+BYD,e6,passenger_car
+BYD,Seal,passenger_car
+BYD,Seal U,passenger_car
+BYD,Sealion 7,passenger_car

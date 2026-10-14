@@ -21,7 +21,9 @@ from rest_framework.views import APIView
 from garage.models import Branch
 from user.models import User
 from .models import (Complaint, Invoice, JobCard, JobCardLabour, JobCardSpare,
-                     JobStatus, Vehicle, VehicleMake, VehicleModel)
+                     JobStatus)
+from vehicle.models import Vehicle
+from vehicle.services import resolve_vehicle_model, update_vehicle
 from .serializer.jobcard_serializer import (JobCardDetailSerializer,
                                             JobCardListSerializer)
 from .utils.whatsapp import send_invoice_whatsapp, send_quotation_whatsapp
@@ -43,13 +45,18 @@ def customer_latest_jobcard(request):
     vehicle_number = re.sub(
         r"[^A-Z0-9]", "", request.query_params.get("vehicle_number", "").upper()
     )
-    if len(vehicle_number) < 5:
-        return Response(
-            {"message": "A valid vehicle number is required."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    vehicle_pattern = r"[^A-Z0-9]*".join(re.escape(char) for char in vehicle_number)
+    if request.user.is_authenticated:
+        if not request.user.role or request.user.role.name != "customer":
+            return Response({"message": "Customer account required."}, status=status.HTTP_403_FORBIDDEN)
+        job_filter = {"vehicle__user": request.user}
+    else:
+        if len(vehicle_number) < 5:
+            return Response(
+                {"message": "A valid vehicle number is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        vehicle_pattern = r"[^A-Z0-9]*".join(re.escape(char) for char in vehicle_number)
+        job_filter = {"vehicle__vehicle_number__iregex": f"^{vehicle_pattern}$"}
     jobcard = (
         JobCard.objects
         .select_related(
@@ -59,7 +66,7 @@ def customer_latest_jobcard(request):
             "created_by",
         )
         .prefetch_related("complaints")
-        .filter(vehicle__vehicle_number__iregex=f"^{vehicle_pattern}$")
+        .filter(**job_filter)
         .order_by("-created_at")
         .first()
     )
@@ -158,7 +165,7 @@ class JobCardView(APIView):
         )
         _update_customer(customer, customer_name, data.get("place", ""))
 
-        vehicle_model = _resolve_vehicle_model(
+        vehicle_model = resolve_vehicle_model(
             data.get("vehicle_model", ""), data.get("vehicle_make", ""))
 
         vehicle, _ = Vehicle.objects.get_or_create(
@@ -169,7 +176,7 @@ class JobCardView(APIView):
                       "chassis_number": data.get("chassis_number", ""),
                       "engine_number": data.get("engine_number", "")},
         )
-        _update_vehicle(vehicle, vehicle_model, data)
+        update_vehicle(vehicle, vehicle_model, data)
 
         job_status, _ = JobStatus.objects.get_or_create(
             name="pending", defaults={"order": 0})
@@ -277,9 +284,9 @@ class JobCardDetailView(APIView):
         if "services" in data and data["services"]:
             _set_complaints(jobcard, data["services"])
 
-        vehicle_model = _resolve_vehicle_model(
+        vehicle_model = resolve_vehicle_model(
             data.get("vehicle_model", ""), data.get("vehicle_make", ""))
-        _update_vehicle(vehicle, vehicle_model, data)
+        update_vehicle(vehicle, vehicle_model, data)
         _update_customer(vehicle.user,
                          data.get("customer_name", vehicle.user.name),
                          data.get("place", vehicle.user.address),
@@ -662,35 +669,6 @@ def _get_or_create_role(name):
     from user.models import UserRole
     role, _ = UserRole.objects.get_or_create(name=name)
     return role
-
-
-def _resolve_vehicle_model(model_name, make_name):
-    if not model_name or not make_name:
-        return None
-    make, _ = VehicleMake.objects.get_or_create(
-        name__iexact=make_name, defaults={"name": make_name})
-    vm, _ = VehicleModel.objects.get_or_create(
-        name__iexact=model_name, fkMaker=make,
-        defaults={"name": model_name})
-    return vm
-
-
-def _update_vehicle(vehicle, vehicle_model, data):
-    changed = False
-    vehicle_number = data.get("vehicle_number", "").strip().upper()
-    if vehicle_number and vehicle.vehicle_number != vehicle_number:
-        vehicle.vehicle_number = vehicle_number
-        changed = True
-    if vehicle_model and vehicle.vehicle_model_id != vehicle_model.id:
-        vehicle.vehicle_model = vehicle_model
-        changed = True
-    for field in ("year", "chassis_number", "engine_number"):
-        val = data.get(field, "").strip()
-        if val and getattr(vehicle, field) != val:
-            setattr(vehicle, field, val)
-            changed = True
-    if changed:
-        vehicle.save()
 
 
 def _update_customer(customer, name, address, mobile=None):

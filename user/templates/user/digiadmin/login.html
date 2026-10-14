@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DigiAuto · Admin sign in</title>
+  <style>
+    :root{--navy:#102b46;--blue:#1769aa;--muted:#6d7b8b;--line:#e4eaf0;--bg:#f3f7fb}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:radial-gradient(circle at 15% 10%,#d9ecfb,transparent 34%),var(--bg);font:15px/1.5 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--navy)}
+    .card{width:min(100%,440px);padding:42px;background:#fff;border:1px solid var(--line);border-radius:20px;box-shadow:0 24px 70px #1d42631a}
+    .brand{display:flex;align-items:center;gap:12px;margin-bottom:34px}.mark{width:44px;height:44px;display:grid;place-items:center;border-radius:13px;background:var(--blue);color:white;font-size:20px;font-weight:800}.brand strong{display:block;font-size:18px;letter-spacing:-.3px}.brand span{color:var(--muted);font-size:12px}
+    h1{margin:0 0 8px;font-size:28px;letter-spacing:-.8px}.intro{margin:0 0 28px;color:var(--muted)}label{display:block;margin:18px 0 7px;font-size:13px;font-weight:650}input{width:100%;height:48px;padding:0 14px;border:1px solid #d8e1e9;border-radius:10px;font:inherit;outline:none}input:focus{border-color:var(--blue);box-shadow:0 0 0 3px #1769aa1c}button{width:100%;height:49px;margin-top:24px;border:0;border-radius:10px;background:var(--blue);color:white;font:inherit;font-weight:700;cursor:pointer}.error{margin:18px 0 0;padding:11px 13px;border-radius:9px;background:#fff1f0;color:#a3312a;font-size:13px}.secure{margin-top:24px;text-align:center;color:var(--muted);font-size:12px}
+  </style>
+</head>
+<body><main class="card">
+  <div class="brand"><div class="mark">D</div><div><strong>DigiAuto</strong><span>OPERATIONS CONSOLE</span></div></div>
+  <h1>Welcome back</h1><p class="intro">Sign in to manage your DigiAuto network.</p>
+  <form method="post">{% csrf_token %}
+    <label for="mobile">Admin mobile number</label><input id="mobile" name="mobile" type="tel" inputmode="numeric" autocomplete="username" required autofocus>
+    <label for="password">Admin password</label><input id="password" name="password" type="password" autocomplete="current-password" required>
+    <button type="submit">Sign in to dashboard</button>
+    {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+  </form><div class="secure">Restricted access · DigiAuto administrators only</div>
+</main></body></html>

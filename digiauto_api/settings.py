@@ -30,6 +30,7 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 PUBLIC_SITE_URL = "https://services.digiauto.co.in"
 
 MSG91_AUTH_KEY = os.environ.get("MSG91_AUTH_KEY", "")
+FIREBASE_ADMIN_CREDENTIALS = os.environ.get("FIREBASE_ADMIN_CREDENTIALS", "")
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 USE_X_FORWARDED_HOST = True
@@ -38,6 +39,7 @@ ALLOWED_HOSTS = [
     "services.digiauto.co.in",
     "localhost",
     "127.0.0.1",
+    # '192.168.1.18'
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True
@@ -57,6 +59,7 @@ INSTALLED_APPS = [
     'user',
     'garage',
     'jobcard',
+    'vehicle',
     'spare',
     'labour',
 ]
@@ -162,6 +165,8 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 

@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
 from jobcard.models import JobStatus
-from user.models import UserRole
+from user.models import UserRole, User as AppUser
 
 User = get_user_model()
 
@@ -16,8 +16,16 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
 
+        # Rename legacy roles and preserve their user assignments.
+        for old_name, new_name in (("admin", "garage-admin"), ("staff", "garage-staff")):
+            old_role = UserRole.objects.filter(name=old_name).first()
+            if old_role:
+                new_role, _ = UserRole.objects.get_or_create(name=new_name)
+                AppUser.objects.filter(role=old_role).update(role=new_role)
+                old_role.delete()
+
         # ✅ Create Roles
-        roles = ["admin", "staff", "customer"]
+        roles = ["garage-admin", "garage-staff", "customer", "digi-staff", "digiadmin"]
         for role in roles:
             UserRole.objects.get_or_create(name=role)
 

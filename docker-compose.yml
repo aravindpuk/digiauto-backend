@@ -30,6 +30,7 @@ services:
     
     volumes:
       - static_data:/app/staticfiles
+      - {FIREBASE_HOST_CREDENTIALS}:/run/secrets/firebase-service-account.json:ro
 
   nginx:
     image: nginx:latest

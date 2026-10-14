@@ -11,7 +11,7 @@ class Labour(models.Model):
 class LabourPrice(models.Model):
     labour        = models.ForeignKey(Labour, on_delete=models.CASCADE, related_name='prices')
     garage        = models.ForeignKey("garage.Garage", on_delete=models.CASCADE, related_name='labour_prices')
-    vehicle_model = models.ForeignKey("jobcard.VehicleModel", null=True, blank=True, on_delete=models.CASCADE, related_name='labour_prices')
+    vehicle_model = models.ForeignKey("vehicle.VehicleModel", null=True, blank=True, on_delete=models.CASCADE, related_name='labour_prices')
 
     price         = models.DecimalField(max_digits=10, decimal_places=2)
 

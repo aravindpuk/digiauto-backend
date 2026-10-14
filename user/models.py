@@ -47,6 +47,14 @@ class User(models.Model):
     def check_pin(self, raw_pin):
         return check_password(raw_pin, self.pin)
 
+    # Digiadmin uses a regular password stored in the same hashed column.
+    # Mobile app users continue to use the PIN helpers above.
+    def set_password(self, raw_password):
+        self.set_pin(raw_password)
+
+    def check_password(self, raw_password):
+        return self.check_pin(raw_password)
+
     def __str__(self):
         return f"{self.name} ({self.mobile})"
 

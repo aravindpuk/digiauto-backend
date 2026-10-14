@@ -13,10 +13,8 @@ from .models import (
     JobCardLabour,
     JobCardSpare,
     JobStatus,
-    Vehicle,
-    VehicleMake,
-    VehicleModel,
 )
+from vehicle.models import Vehicle, VehicleMake, VehicleModel
 from .views import JobCardDetailView, JobCardReportsView
 
 
