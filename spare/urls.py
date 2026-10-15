@@ -5,6 +5,7 @@ from . import shop_views
 urlpatterns = [
     path("shops/register/", views.RegisterSpareShop.as_view(), name="spare-shop-register"),
     path("used-requests/", views.UsedSpareRequestsAPI.as_view(), name="used-spare-requests"),
+    path("used-requests/<int:request_id>/", views.UsedSpareRequestsAPI.as_view(), name="used-spare-request-detail"),
     path("shops/inventory/", shop_views.SpareShopInventoryAPI.as_view(), name="spare-shop-inventory"),
     path("shops/inventory/<int:item_id>/", shop_views.SpareShopInventoryDetailAPI.as_view(), name="spare-shop-inventory-detail"),
     path("shops/orders/", shop_views.SpareShopOrdersAPI.as_view(), name="spare-shop-orders"),

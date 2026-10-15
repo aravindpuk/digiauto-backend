@@ -77,8 +77,10 @@ class UsedSpareRequestsAPI(views.APIView):
         if not self._allowed_requester(request):
             return Response({"message": "Customer or garage account required."},
                             status=status.HTTP_403_FORBIDDEN)
-        requests = UsedSpareRequest.objects.filter(customer=request.user)
-        return Response({"orders": [self._data(item) for item in requests]},
+        requests = UsedSpareRequest.objects.filter(customer=request.user).prefetch_related(
+            "photos", "shop_orders__shop"
+        )
+        return Response({"orders": [self._data(item, request) for item in requests]},
                         status=status.HTTP_200_OK)
 
     def post(self, request):
@@ -124,22 +126,54 @@ class UsedSpareRequestsAPI(views.APIView):
             UsedSpareRequestImage.objects.create(request=item, image=image)
         _notify_digiauto_team(item)
         return Response({"message": "Your used spare request was submitted.",
-                          "order": self._data(item)},
+                          "order": self._data(item, request)},
                          status=status.HTTP_201_CREATED)
 
+    def patch(self, request, request_id):
+        if not self._allowed_requester(request):
+            return Response({"message": "Customer or garage account required."}, status=403)
+        item = get_object_or_404(UsedSpareRequest, pk=request_id, customer=request.user)
+        if item.status != UsedSpareRequest.STATUS_SUBMITTED:
+            return Response({"message": "Only new requests can be edited."}, status=400)
+        for field in ("vehicle_make", "vehicle_model", "vehicle_year", "spare_name"):
+            if field in request.data:
+                setattr(item, field, str(request.data[field]).strip())
+        if not item.vehicle_make or not item.vehicle_model:
+            return Response({"message": "Select the vehicle make and model."}, status=400)
+        if item.vehicle_year and (len(item.vehicle_year) != 4 or not item.vehicle_year.isdigit()):
+            return Response({"message": "Enter a valid 4-digit year or leave it empty."}, status=400)
+        item.save()
+        return Response({"message": "Request updated.", "order": self._data(item, request)})
+
+    def delete(self, request, request_id):
+        if not self._allowed_requester(request):
+            return Response({"message": "Customer or garage account required."}, status=403)
+        item = get_object_or_404(UsedSpareRequest, pk=request_id, customer=request.user)
+        if item.status != UsedSpareRequest.STATUS_SUBMITTED:
+            return Response({"message": "Only new requests can be cancelled."}, status=400)
+        item.delete()
+        return Response({"message": "Request cancelled."}, status=200)
+
     @staticmethod
-    def _data(item):
+    def _data(item, request):
         return {
             "id": item.id,
             "vehicle_make": item.vehicle_make,
             "vehicle_model": item.vehicle_model,
             "vehicle_year": item.vehicle_year,
             "spare_name": item.spare_name,
-            "images": [photo.image.url for photo in item.photos.all()],
-            "image_url": item.image.url if item.image else "",
+            "images": [request.build_absolute_uri(photo.image.url) for photo in item.photos.all()],
+            "image_url": request.build_absolute_uri(item.image.url) if item.image else "",
             "has_image": bool(item.image or item.photos.exists()),
             "status": item.status,
             "created_at": item.created_at.isoformat(),
+            "assignments": [{
+                "shop_name": order.shop.name,
+                "status": order.status,
+                "status_label": order.get_status_display(),
+                "shop_note": order.shop_note,
+                "updated_at": order.updated_at.isoformat(),
+            } for order in item.shop_orders.all()],
         }
 
 
