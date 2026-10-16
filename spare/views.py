@@ -135,6 +135,30 @@ class UsedSpareRequestsAPI(views.APIView):
         item = get_object_or_404(UsedSpareRequest, pk=request_id, customer=request.user)
         if item.status != UsedSpareRequest.STATUS_SUBMITTED:
             return Response({"message": "Only new requests can be edited."}, status=400)
+        images = request.FILES.getlist("images")
+        if len(images) > 6:
+            return Response({"message": "Upload up to 6 photos per request."}, status=400)
+        for image in images:
+            if image.size > 5 * 1024 * 1024:
+                return Response({"message": "Each photo must be 5 MB or smaller."}, status=400)
+            try:
+                serializers.ImageField().run_validation(image)
+            except serializers.ValidationError:
+                return Response({"message": "Upload valid image files."}, status=400)
+
+        raw_remove_ids = request.data.get("remove_image_ids", "")
+        remove_legacy_image = str(request.data.get("remove_legacy_image", "")).lower() in {"1", "true", "yes"}
+        try:
+            remove_ids = [int(value) for value in str(raw_remove_ids).split(",") if value.strip()]
+        except ValueError:
+            return Response({"message": "Invalid photo selection."}, status=400)
+        photos_to_remove = item.photos.filter(id__in=remove_ids)
+        remaining_count = (
+            item.photos.count() - photos_to_remove.count() + len(images)
+            + (1 if item.image and not remove_legacy_image else 0)
+        )
+        if remaining_count > 6:
+            return Response({"message": "Upload up to 6 photos per request."}, status=400)
         for field in ("vehicle_make", "vehicle_model", "vehicle_year", "spare_name"):
             if field in request.data:
                 setattr(item, field, str(request.data[field]).strip())
@@ -142,6 +166,17 @@ class UsedSpareRequestsAPI(views.APIView):
             return Response({"message": "Select the vehicle make and model."}, status=400)
         if item.vehicle_year and (len(item.vehicle_year) != 4 or not item.vehicle_year.isdigit()):
             return Response({"message": "Enter a valid 4-digit year or leave it empty."}, status=400)
+        retained_legacy_image = bool(item.image) and not remove_legacy_image
+        if not item.spare_name and remaining_count == 0 and not retained_legacy_image:
+            return Response({"message": "Add a spare name or at least one photo."}, status=400)
+        for photo in photos_to_remove:
+            photo.image.delete(save=False)
+            photo.delete()
+        if remove_legacy_image and item.image:
+            item.image.delete(save=False)
+            item.image = ""
+        for image in images:
+            UsedSpareRequestImage.objects.create(request=item, image=image)
         item.save()
         return Response({"message": "Request updated.", "order": self._data(item, request)})
 
@@ -162,7 +197,14 @@ class UsedSpareRequestsAPI(views.APIView):
             "vehicle_model": item.vehicle_model,
             "vehicle_year": item.vehicle_year,
             "spare_name": item.spare_name,
-            "images": [request.build_absolute_uri(photo.image.url) for photo in item.photos.all()],
+            "images": ([{
+                "id": photo.id,
+                "url": request.build_absolute_uri(photo.image.url),
+            } for photo in item.photos.all()] + ([{
+                "id": None,
+                "url": request.build_absolute_uri(item.image.url),
+                "legacy": True,
+            }] if item.image else [])),
             "image_url": request.build_absolute_uri(item.image.url) if item.image else "",
             "has_image": bool(item.image or item.photos.exists()),
             "status": item.status,

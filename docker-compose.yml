@@ -30,6 +30,7 @@ services:
     
     volumes:
       - static_data:/app/staticfiles
+      - media_data:/app/media
       - ${FIREBASE_ADMIN_CREDENTIALS}:/run/secrets/firebase-service-account.json:ro
 
   nginx:
@@ -45,6 +46,7 @@ services:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
       - /etc/letsencrypt:/etc/letsencrypt:ro
       - static_data:/staticfiles
+      - media_data:/media:ro
 
 
     depends_on:
@@ -53,3 +55,4 @@ services:
 volumes:
   postgres_data:
   static_data:
+  media_data:
